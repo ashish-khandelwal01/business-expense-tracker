@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Business Expense Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card {
+            padding: 25px;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link {
+            color: #495057;
+            padding: 15px 20px;
+            transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background-color: #e9ecef;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="bi bi-graph-up"></i> Business Tracker
+        </a>
+        <div class="d-flex align-items-center text-white">
+            <span class="me-3" >WearCraft</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-md-block sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link active" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/products"><i class="bi bi-box-seam"></i> Products</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/expenses"><i class="bi bi-receipt"></i> Expenses</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/sales"><i class="bi bi-cart-check"></i> Sales</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/returns"><i class="bi bi-arrow-return-left"></i> Returns</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+            <h2 class="mb-4">Dashboard Overview</h2>
+
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card stat-card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="card-body">
+                            <h6 class="card-title">Monthly Expenses</h6>
+                            <div class="stat-value" id="monthlyExpenses">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card stat-card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <div class="card-body">
+                            <h6 class="card-title">Monthly Sales</h6>
+                            <div class="stat-value" id="monthlySales">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card stat-card text-white" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                        <div class="card-body">
+                            <h6 class="card-title">Monthly Profit</h6>
+                            <div class="stat-value" id="profit">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="row mb-4">
+                <div class="col-md-8 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Monthly Sales vs Expenses</h5>
+                            <div class="chart-container">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Expenses by Category</h5>
+                            <div class="chart-container">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Selling Products</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>Product ID</th>
+                                        <th>Product Name</th>
+                                        <th>Total Quantity</th>
+                                        <th>Total Revenue</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="topProductsTable">
+                                    <tr>
+                                        <td colspan="4" class="text-center">Loading...</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    let monthlyChart, categoryChart;
+
+    // Fetch dashboard data
+    async function loadDashboardData() {
+        try {
+            const summaryResponse = await fetch('/api/dashboard/summary');
+            const summary = await summaryResponse.json();
+
+            document.getElementById('monthlyExpenses').textContent = `$${summary.monthlyExpenses.toFixed(2)}`;
+            document.getElementById('monthlySales').textContent = `$${summary.monthlySales.toFixed(2)}`;
+            document.getElementById('profit').textContent = `$${summary.profit.toFixed(2)}`;
+
+            renderCategoryChart(summary.expensesByCategory);
+
+            const monthlyResponse = await fetch('/api/dashboard/monthly-data');
+            const monthlyData = await monthlyResponse.json();
+            renderMonthlyChart(monthlyData);
+
+            const productsResponse = await fetch('/api/dashboard/top-products');
+            const products = await productsResponse.json();
+            renderTopProducts(products);
+
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        }
+    }
+
+    function renderMonthlyChart(data) {
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const expenseData = Array(12).fill(0);
+        const salesData = Array(12).fill(0);
+
+        data.expenses.forEach(item => {
+            expenseData[item[0] - 1] = item[1];
+        });
+
+        data.sales.forEach(item => {
+            salesData[item[0] - 1] = item[1];
+        });
+
+        if (monthlyChart) monthlyChart.destroy();
+
+        monthlyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Sales',
+                    data: salesData,
+                    borderColor: '#4facfe',
+                    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Expenses',
+                    data: expenseData,
+                    borderColor: '#f5576c',
+                    backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(0);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderCategoryChart(categories) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+
+        const labels = Object.keys(categories);
+        const data = Object.values(categories);
+
+        if (categoryChart) categoryChart.destroy();
+
+        categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#f093fb',
+                        '#4facfe',
+                        '#43e97b'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function renderTopProducts(products) {
+        const tbody = document.getElementById('topProductsTable');
+
+        if (products.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">No products found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = products.slice(0, 10).map(product => `
+            <tr>
+                <td>${product[0]}</td>
+                <td>${product[1]}</td>
+                <td>${product[2]}</td>
+                <td>$${parseFloat(product[3]).toFixed(2)}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', loadDashboardData);
+</script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Returns - Business Expense Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link {
+            color: #495057;
+            padding: 15px 20px;
+            transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background-color: #e9ecef;
+            color: #667eea;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="bi bi-graph-up"></i> Business Tracker
+        </a>
+        <div class="d-flex align-items-center text-white">
+            <span class="me-3" >WearCraft</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-md-block sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/products"><i class="bi bi-box-seam"></i> Products</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/expenses"><i class="bi bi-receipt"></i> Expenses</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/sales"><i class="bi bi-cart-check"></i> Sales</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/returns"><i class="bi bi-arrow-return-left"></i> Returns</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Returns Management</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#returnModal" onclick="clearForm()">
+                    <i class="bi bi-plus-circle"></i> Add Return
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product ID</th>
+                                <th>Product Name</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Total Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="returnsTable">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading...</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Return Modal -->
+<div class="modal fade" id="returnModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Returns</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="returnForm">
+                    <input type="hidden" id="returnId">
+                    <div class="mb-3">
+                        <label for="productId" class="form-label">Product ID</label>
+                        <input type="text" class="form-control" id="productId" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="productName" class="form-label">Product Name</label>
+                        <input type="text" class="form-control" id="productName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="returnDate" class="form-label">Return Date</label>
+                        <input type="date" class="form-control" id="returnDate" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="quantity" min="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="unitPrice" class="form-label">Unit Price</label>
+                            <input type="number" class="form-control" id="unitPrice" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="totalAmount" class="form-label">Total Amount</label>
+                        <input type="number" class="form-control" id="totalAmount" step="0.01" min="0" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveReturn()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let returns = [];
+    const modal = new bootstrap.Modal(document.getElementById('returnModal'));
+
+    async function loadReturns() {
+        try {
+            const response = await fetch('/api/returns');
+            returns = await response.json();
+            renderReturns();
+        } catch (error) {
+            console.error('Error loading returns:', error);
+        }
+    }
+
+    function renderReturns() {
+        const tbody = document.getElementById('returnsTable');
+
+        if (returns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No returns found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = returns.map(return1 => `
+            <tr>
+                <td>${return1.returnDate}</td>
+                <td>${return1.productId}</td>
+                <td>${return1.productName}</td>
+                <td>${return1.quantity}</td>
+                <td>${return1.unitPrice.toFixed(2)}</td>
+                <td><strong>${return1.totalAmount.toFixed(2)}</strong></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editReturn(${return1.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteReturn(${return1.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function clearForm() {
+        document.getElementById('returnForm').reset();
+        document.getElementById('returnId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add Return';
+        document.getElementById('returnDate').valueAsDate = new Date();
+        document.getElementById('totalAmount').value = '0.00';
+    }
+
+    function editReturn(id) {
+        const return1 = returns.find(s => s.id === id);
+        if (!return1) return;
+
+        document.getElementById('returnId').value = return1.id;
+        document.getElementById('productId').value = return1.productId;
+        document.getElementById('productName').value = return1.productName;
+        document.getElementById('returnDate').value = return1.returnDate;
+        document.getElementById('quantity').value = return1.quantity;
+        document.getElementById('unitPrice').value = return1.unitPrice;
+        document.getElementById('totalAmount').value = return1.totalAmount;
+        document.getElementById('notes').value = return1.notes || '';
+        document.getElementById('modalTitle').textContent = 'Edit Return';
+
+        modal.show();
+    }
+
+    async function saveReturn() {
+        const id = document.getElementById('returnId').value;
+        const data = {
+            productId: document.getElementById('productId').value,
+            productName: document.getElementById('productName').value,
+            returnDate: document.getElementById('returnDate').value,
+            quantity: parseInt(document.getElementById('quantity').value),
+            unitPrice: parseFloat(document.getElementById('unitPrice').value),
+            notes: document.getElementById('notes').value || null
+        };
+
+        try {
+            const url = id ? `/api/returns/${id}` : '/api/returns';
+            const method = id ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                modal.hide();
+                loadReturns();
+            } else {
+                alert('Error saving return');
+            }
+        } catch (error) {
+            console.error('Error saving return:', error);
+            alert('Error saving return');
+        }
+    }
+
+    async function deleteReturn(id) {
+        if (!confirm('Are you sure you want to delete this return?')) return;
+
+        try {
+            const response = await fetch(`/api/returns/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                loadReturns();
+            } else {
+                alert('Error deleting return');
+            }
+        } catch (error) {
+            console.error('Error deleting return:', error);
+            alert('Error deleting return');
+        }
+    }
+
+    // Auto-calculate total amount
+    document.getElementById('quantity').addEventListener('input', calculateTotal);
+    document.getElementById('unitPrice').addEventListener('input', calculateTotal);
+
+    function calculateTotal() {
+        const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+        const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+        document.getElementById('totalAmount').value = (quantity * unitPrice).toFixed(2);
+    }
+
+    // Load returns on page load
+    document.addEventListener('DOMContentLoaded', loadReturns);
+</script>
+</body>
+</html>
