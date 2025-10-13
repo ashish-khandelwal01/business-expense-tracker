@@ -45,7 +45,7 @@
             <i class="bi bi-graph-up"></i> Business Tracker
         </a>
         <div class="d-flex align-items-center text-white">
-            <span class="me-3" >WearCraft</span>
+            <span class="me-3">WearCraft</span>
             <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
         </div>
     </div>
@@ -106,35 +106,35 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add Returns</h5>
+                <h5 class="modal-title" id="modalTitle">Add Return</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="returnForm">
                     <input type="hidden" id="returnId">
                     <div class="mb-3">
-                        <label for="Product" class="form-label">Select Product*</label>
-                        <select class="form-select" id="Product">
+                        <label for="productSelect" class="form-label">Select Product *</label>
+                        <select class="form-select" id="productSelect" required>
                             <option value="">Choose a product...</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="returnDate" class="form-label">Return Date</label>
+                        <label for="returnDate" class="form-label">Return Date *</label>
                         <input type="date" class="form-control" id="returnDate" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="quantity" class="form-label">Quantity</label>
+                            <label for="quantity" class="form-label">Quantity *</label>
                             <input type="number" class="form-control" id="quantity" min="1" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="unitPrice" class="form-label">Unit Price</label>
+                            <label for="unitPrice" class="form-label">Unit Price *</label>
                             <input type="number" class="form-control" id="unitPrice" step="0.01" min="0" required>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="totalAmount" class="form-label">Total Amount</label>
-                        <input type="number" class="form-control" id="totalAmount" step="0.01" min="0" readonly>
+                        <input type="text" class="form-control" id="totalAmount" readonly>
                     </div>
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes (Optional)</label>
@@ -153,6 +153,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     let returns = [];
+    let products = [];
     const modal = new bootstrap.Modal(document.getElementById('returnModal'));
 
     async function loadReturns() {
@@ -165,6 +166,22 @@
         }
     }
 
+    async function loadProducts() {
+        try {
+            const response = await fetch('/api/products');
+            products = await response.json();
+            populateProductDropdown();
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    }
+
+    function populateProductDropdown() {
+        const dropdown = document.getElementById('productSelect');
+        dropdown.innerHTML = '<option value="">Choose a product...</option>' +
+            products.map(p => `<option value="${p.id}" data-name="${p.productName}" data-price="${p.sellingPrice}">${p.productName} (Stock: ${p.stockQuantity})</option>`).join('');
+    }
+
     function renderReturns() {
         const tbody = document.getElementById('returnsTable');
 
@@ -173,19 +190,19 @@
             return;
         }
 
-        tbody.innerHTML = returns.map(return1 => `
+        tbody.innerHTML = returns.map(returnItem => `
             <tr>
-                <td>${return1.returnDate}</td>
-                <td>${return1.productId}</td>
-                <td>${return1.productName}</td>
-                <td>${return1.quantity}</td>
-                <td>${return1.unitPrice.toFixed(2)}</td>
-                <td><strong>${return1.totalAmount.toFixed(2)}</strong></td>
+                <td>${returnItem.returnDate}</td>
+                <td>${returnItem.productId}</td>
+                <td>${returnItem.productName}</td>
+                <td>${returnItem.quantity}</td>
+                <td>$${returnItem.unitPrice.toFixed(2)}</td>
+                <td><strong>$${returnItem.totalAmount.toFixed(2)}</strong></td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="editReturn(${return1.id})">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editReturn(${returnItem.id})">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteReturn(${return1.id})">
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteReturn(${returnItem.id})">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -198,31 +215,50 @@
         document.getElementById('returnId').value = '';
         document.getElementById('modalTitle').textContent = 'Add Return';
         document.getElementById('returnDate').valueAsDate = new Date();
-        document.getElementById('totalAmount').value = '0.00';
+        document.getElementById('totalAmount').value = '';
     }
 
-    function editReturn(id) {
-        const return1 = returns.find(s => s.id === id);
-        if (!return1) return;
+    // Auto-fill price when product is selected
+    document.getElementById('productSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const price = selectedOption.getAttribute('data-price');
+        if (price) {
+            document.getElementById('unitPrice').value = parseFloat(price).toFixed(2);
+            calculateTotal();
+        }
+    });
 
-        document.getElementById('returnId').value = return1.id;
-        document.getElementById('productId').value = return1.productId;
-        document.getElementById('productName').value = return1.productName;
-        document.getElementById('returnDate').value = return1.returnDate;
-        document.getElementById('quantity').value = return1.quantity;
-        document.getElementById('unitPrice').value = return1.unitPrice;
-        document.getElementById('totalAmount').value = return1.totalAmount;
-        document.getElementById('notes').value = return1.notes || '';
+    function editReturn(id) {
+        const returnItem = returns.find(r => r.id === id);
+        if (!returnItem) return;
+
+        document.getElementById('returnId').value = returnItem.id;
+        document.getElementById('productSelect').value = returnItem.productId;
+        document.getElementById('returnDate').value = returnItem.returnDate;
+        document.getElementById('quantity').value = returnItem.quantity;
+        document.getElementById('unitPrice').value = returnItem.unitPrice;
+        document.getElementById('notes').value = returnItem.notes || '';
+        calculateTotal();
         document.getElementById('modalTitle').textContent = 'Edit Return';
 
         modal.show();
     }
 
     async function saveReturn() {
+        const productId = document.getElementById('productSelect').value;
+
+        if (!productId) {
+            alert('Please select a product');
+            return;
+        }
+
+        const selectedOption = document.getElementById('productSelect').options[document.getElementById('productSelect').selectedIndex];
+        const productName = selectedOption.getAttribute('data-name');
+
         const id = document.getElementById('returnId').value;
         const data = {
-            productId: document.getElementById('productId').value,
-            productName: document.getElementById('productName').value,
+            productId: parseInt(productId),
+            productName: productName,
             returnDate: document.getElementById('returnDate').value,
             quantity: parseInt(document.getElementById('quantity').value),
             unitPrice: parseFloat(document.getElementById('unitPrice').value),
@@ -245,7 +281,8 @@
                 modal.hide();
                 loadReturns();
             } else {
-                alert('Error saving return');
+                const errorText = await response.text();
+                alert('Error saving return: ' + errorText);
             }
         } catch (error) {
             console.error('Error saving return:', error);
@@ -279,16 +316,15 @@
     function calculateTotal() {
         const quantity = parseFloat(document.getElementById('quantity').value) || 0;
         const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
-        document.getElementById('totalAmount').value = (quantity * unitPrice).toFixed(2);
-    }
-    function populateProductDropdown() {
-        const dropdown = document.getElementById('Product');
-        dropdown.innerHTML = '<option value="">Choose a product...</option>' +
-            products.map(p => `<option value="${p.id}">${p.productName};
+        const total = quantity * unitPrice;
+        document.getElementById('totalAmount').value = total > 0 ? `$${total.toFixed(2)}` : '';
     }
 
-    // Load returns on page load
-    document.addEventListener('DOMContentLoaded', loadReturns);
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadReturns();
+        loadProducts();
+    });
 </script>
 </body>
 </html>
