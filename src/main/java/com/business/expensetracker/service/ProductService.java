@@ -51,7 +51,7 @@ public class ProductService {
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
-        productRepository.save(product);
+        productRepository.delete(product);
     }
 
     public Product updateStock(Long productId, Integer quantityChange) {
@@ -67,4 +67,3 @@ public class ProductService {
         return productRepository.save(product);
     }
 }
-

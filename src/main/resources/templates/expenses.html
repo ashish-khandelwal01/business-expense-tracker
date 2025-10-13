@@ -87,8 +87,8 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Category</th>
+                                <th>Product Name</th>
                                 <th>Description</th>
-                                <th>Product</th>
                                 <th>Details</th>
                                 <th>Total Amount</th>
                                 <th>Actions</th>
@@ -126,7 +126,7 @@
                             <option value="">Select Category</option>
                             <option value="INVENTORY">Inventory costs</option>
                             <option value="OVERHEAD">Overhead costs</option>
-                            <option value="RUNNING">Running costs</option>
+                            <option value="RUNNING_COSTS">Running costs</option>
                         </select>
                     </div>
 
@@ -155,7 +155,7 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label" for="inventoryTotal">Total Amount</label>
+                            <label for="inventoryTotal" class="form-label">Total Amount</label>
                             <input type="text" class="form-control" id="inventoryTotal" readonly>
                         </div>
                     </div>
@@ -262,16 +262,16 @@
         tbody.innerHTML = expenses.map(expense => {
             let details = '';
             let productInfo = '-';
-
+            console.log(expense);
             if (expense.category === 'INVENTORY') {
-                details = `Qty: ${expense.quantity || 0}, Unit Cost: $${(expense.unitCost || 0).toFixed(2)}`;
-                productInfo = expense.productId || '-';
+                details = `Qty: ${expense.quantity || 0}, Unit Cost: ₹${(expense.unitCost || 0).toFixed(2)}`;
+                productInfo = expense.product.productName || '-';
             } else if (expense.category === 'OVERHEAD') {
                 details = `Depreciation: ${expense.depreciationMonths || 0} months`;
-                productInfo = expense.description || '-';
-            } else if (expense.category === 'RUNNING') {
+                productInfo = expense.productName || '-';
+            } else if (expense.category === 'RUNNING_COSTS') {
                 details = `Units: ${expense.unitsToDistribute || 0}`;
-                productInfo = expense.description || '-';
+                productInfo = expense.productName || '-';
             }
 
             const categoryDisplay = expense.category === 'INVENTORY' ? 'Inventory costs' :
@@ -281,10 +281,10 @@
                 <tr>
                     <td>${expense.expenseDate}</td>
                     <td><span class="badge bg-info">${categoryDisplay}</span></td>
-                    <td>${expense.notes || '-'}</td>
                     <td>${productInfo}</td>
+                    <td>${expense.description || '-'}</td>
                     <td>${details}</td>
-                    <td>$${expense.amount.toFixed(2)}</td>
+                    <td><strong>₹${expense.amount.toFixed(2)}</strong></td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="editExpense(${expense.id})">
                             <i class="bi bi-pencil"></i>
@@ -311,7 +311,7 @@
             document.getElementById('inventoryFields').classList.add('active');
         } else if (category === 'OVERHEAD') {
             document.getElementById('overheadFields').classList.add('active');
-        } else if (category === 'RUNNING') {
+        } else if (category === 'RUNNING_COSTS') {
             document.getElementById('runningFields').classList.add('active');
         }
     }
@@ -341,12 +341,12 @@
             document.getElementById('inventoryCostPerUnit').value = expense.unitCost || '';
             calculateInventoryTotal();
         } else if (expense.category === 'OVERHEAD') {
-            document.getElementById('overheadProductName').value = expense.description || '';
+            document.getElementById('overheadProductName').value = expense.product.productName || '';
             document.getElementById('overheadCost').value = expense.amount || '';
             document.getElementById('depreciationMonths').value = expense.depreciationMonths || '';
             calculateDepreciation();
-        } else if (expense.category === 'RUNNING') {
-            document.getElementById('runningProductName').value = expense.description || '';
+        } else if (expense.category === 'RUNNING_COSTS') {
+            document.getElementById('runningProductName').value = expense.product.productName || '';
             document.getElementById('runningAmount').value = expense.amount || '';
             document.getElementById('unitsToDistribute').value = expense.unitsToDistribute || '';
             calculateCostPerUnit();
@@ -383,11 +383,10 @@
             }
 
             const product = products.find(p => p.id == productId);
-            data.description = product ? product.productName : 'Product';
+            data.description = product ? product.description : 'Product';
             data.productId = productId;
             data.quantity = quantity;
             data.unitCost = unitCost;
-            data.amount = quantity * unitCost;
         } else if (category === 'OVERHEAD') {
             const productName = document.getElementById('overheadProductName').value;
             const cost = parseFloat(document.getElementById('overheadCost').value);
@@ -398,10 +397,17 @@
                 return;
             }
 
+            data.productName = productName;
             data.description = productName;
-            data.amount = cost;
+            data.lumpsumAmount = cost;
             data.depreciationMonths = months;
-        } else if (category === 'RUNNING') {
+            // Set start and end dates based on current date and depreciation months
+            const startDate = new Date(document.getElementById('expenseDate').value);
+            data.startDate = startDate.toISOString().split('T')[0];
+            const endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + months);
+            data.endDate = endDate.toISOString().split('T')[0];
+        } else if (category === 'RUNNING_COSTS') {
             const productName = document.getElementById('runningProductName').value;
             const amount = parseFloat(document.getElementById('runningAmount').value);
             const units = parseInt(document.getElementById('unitsToDistribute').value);
@@ -411,6 +417,7 @@
                 return;
             }
 
+            data.productName = productName;
             data.description = productName;
             data.amount = amount;
             data.unitsToDistribute = units;
@@ -419,7 +426,7 @@
         try {
             const url = id ? `/api/expenses/${id}` : '/api/expenses';
             const method = id ? 'PUT' : 'POST';
-
+            console.log(data);
             const response = await fetch(url, {
                 method: method,
                 headers: {
@@ -467,7 +474,7 @@
         const quantity = parseFloat(document.getElementById('inventoryQuantity').value) || 0;
         const unitCost = parseFloat(document.getElementById('inventoryCostPerUnit').value) || 0;
         const total = quantity * unitCost;
-        document.getElementById('inventoryTotal').value = total > 0 ? `$${total.toFixed(2)}` : '';
+        document.getElementById('inventoryTotal').value = total > 0 ? `₹${total.toFixed(2)}` : '';
     }
 
     // Calculate depreciation
@@ -478,7 +485,7 @@
         const cost = parseFloat(document.getElementById('overheadCost').value) || 0;
         const months = parseFloat(document.getElementById('depreciationMonths').value) || 0;
         const monthly = months > 0 ? cost / months : 0;
-        document.getElementById('monthlyDepreciation').value = monthly > 0 ? `$${monthly.toFixed(2)}/month` : '';
+        document.getElementById('monthlyDepreciation').value = monthly > 0 ? `₹${monthly.toFixed(2)}/month` : '';
     }
 
     // Calculate cost per unit
@@ -489,7 +496,7 @@
         const amount = parseFloat(document.getElementById('runningAmount').value) || 0;
         const units = parseFloat(document.getElementById('unitsToDistribute').value) || 0;
         const perUnit = units > 0 ? amount / units : 0;
-        document.getElementById('costPerUnit').value = perUnit > 0 ? `$${perUnit.toFixed(2)}/unit` : '';
+        document.getElementById('costPerUnit').value = perUnit > 0 ? `₹${perUnit.toFixed(2)}/unit` : '';
     }
 
     // Load data on page load

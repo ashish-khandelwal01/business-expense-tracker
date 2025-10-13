@@ -86,7 +86,7 @@
                     <div class="card stat-card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                         <div class="card-body">
                             <h6 class="card-title">Monthly Expenses</h6>
-                            <div class="stat-value" id="monthlyExpenses">$0.00</div>
+                            <div class="stat-value" id="monthlyExpenses">₹0.00</div>
                         </div>
                     </div>
                 </div>
@@ -94,7 +94,7 @@
                     <div class="card stat-card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                         <div class="card-body">
                             <h6 class="card-title">Monthly Sales</h6>
-                            <div class="stat-value" id="monthlySales">$0.00</div>
+                            <div class="stat-value" id="monthlySales">₹0.00</div>
                         </div>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
                     <div class="card stat-card text-white" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
                         <div class="card-body">
                             <h6 class="card-title">Monthly Profit</h6>
-                            <div class="stat-value" id="profit">$0.00</div>
+                            <div class="stat-value" id="profit">₹0.00</div>
                         </div>
                     </div>
                 </div>
@@ -175,9 +175,9 @@
             const summaryResponse = await fetch('/api/dashboard/summary');
             const summary = await summaryResponse.json();
 
-            document.getElementById('monthlyExpenses').textContent = `$${summary.monthlyExpenses.toFixed(2)}`;
-            document.getElementById('monthlySales').textContent = `$${summary.monthlySales.toFixed(2)}`;
-            document.getElementById('profit').textContent = `$${summary.grossProfit.toFixed(2)}`;
+            document.getElementById('monthlyExpenses').textContent = `₹${summary.monthlyExpenses.toFixed(2)}`;
+            document.getElementById('monthlySales').textContent = `₹${summary.monthlySales.toFixed(2)}`;
+            document.getElementById('profit').textContent = `₹${summary.grossProfit.toFixed(2)}`;
 
             renderCategoryChart(summary.expensesByCategory);
 
@@ -242,7 +242,7 @@
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) {
-                                return '$' + value.toFixed(0);
+                                return '₹' + value.toFixed(0);
                             }
                         }
                     }
@@ -308,7 +308,7 @@
                 <td>${product[0]}</td>
                 <td>${product[1]}</td>
                 <td>${product[2]}</td>
-                <td>$${parseFloat(product[3]).toFixed(2)}</td>
+                <td>₹${parseFloat(product[3]).toFixed(2)}</td>
             </tr>
         `).join('');
     }

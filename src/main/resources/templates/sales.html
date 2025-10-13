@@ -189,15 +189,15 @@
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">No sales found</td></tr>';
             return;
         }
-
+        console.log(sales);
         tbody.innerHTML = sales.map(sale => `
             <tr>
                 <td>${sale.saleDate}</td>
-                <td>${sale.productId}</td>
-                <td>${sale.productName}</td>
+                <td>${sale.product.id}</td>
+                <td>${sale.product.productName}</td>
                 <td>${sale.quantity}</td>
-                <td>$${sale.unitPrice.toFixed(2)}</td>
-                <td><strong>$${sale.totalAmount.toFixed(2)}</strong></td>
+                <td>₹${sale.unitPrice.toFixed(2)}</td>
+                <td><strong>₹${sale.totalAmount.toFixed(2)}</strong></td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary" onclick="editSale(${sale.id})">
                         <i class="bi bi-pencil"></i>
@@ -317,7 +317,7 @@
         const quantity = parseFloat(document.getElementById('quantity').value) || 0;
         const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
         const total = quantity * unitPrice;
-        document.getElementById('totalAmount').value = total > 0 ? `$${total.toFixed(2)}` : '';
+        document.getElementById('totalAmount').value = total > 0 ? `₹${total.toFixed(2)}` : '';
     }
 
     // Load data on page load

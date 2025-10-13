@@ -23,14 +23,20 @@ public class AdminUserInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (userRepository.findByUsername(adminUsername).isEmpty()) {
+        userRepository.findByUsername(adminUsername).ifPresentOrElse(admin -> {
+            // Check if password matches the encoded env password
+            if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
+                admin.setPassword(passwordEncoder.encode(adminPassword));
+                userRepository.save(admin);
+                System.out.println("Admin user password updated: " + adminUsername);
+            }
+        }, () -> {
             User admin = new User();
             admin.setUsername(adminUsername);
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setRole("ADMIN");
             userRepository.save(admin);
             System.out.println("Admin user created: " + adminUsername);
-        }
+        });
     }
 }
-
