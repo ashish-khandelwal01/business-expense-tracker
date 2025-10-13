@@ -166,6 +166,9 @@
 <script>
     let monthlyChart, categoryChart;
 
+    // Fixed expense categories
+    const EXPENSE_CATEGORIES = ['Inventory costs', 'Overhead costs', 'Running costs'];
+
     // Fetch dashboard data
     async function loadDashboardData() {
         try {
@@ -174,7 +177,7 @@
 
             document.getElementById('monthlyExpenses').textContent = `$${summary.monthlyExpenses.toFixed(2)}`;
             document.getElementById('monthlySales').textContent = `$${summary.monthlySales.toFixed(2)}`;
-            document.getElementById('profit').textContent = `$${summary.profit.toFixed(2)}`;
+            document.getElementById('profit').textContent = `$${summary.grossProfit.toFixed(2)}`;
 
             renderCategoryChart(summary.expensesByCategory);
 
@@ -251,8 +254,19 @@
     function renderCategoryChart(categories) {
         const ctx = document.getElementById('categoryChart').getContext('2d');
 
-        const labels = Object.keys(categories);
-        const data = Object.values(categories);
+        // Handle undefined or null categories
+        const safeCategories = categories || {};
+
+        // Ensure we only use the three fixed categories
+        const categoryData = {};
+
+        // Initialize all three categories with 0
+        EXPENSE_CATEGORIES.forEach(cat => {
+            categoryData[cat] = safeCategories[cat] || 0;
+        });
+
+        const labels = EXPENSE_CATEGORIES;
+        const data = labels.map(label => categoryData[label]);
 
         if (categoryChart) categoryChart.destroy();
 
@@ -265,9 +279,7 @@
                     backgroundColor: [
                         '#667eea',
                         '#764ba2',
-                        '#f093fb',
-                        '#4facfe',
-                        '#43e97b'
+                        '#f093fb'
                     ]
                 }]
             },

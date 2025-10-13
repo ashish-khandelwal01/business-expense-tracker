@@ -36,6 +36,12 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
         }
+        .category-fields {
+            display: none;
+        }
+        .category-fields.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -45,7 +51,7 @@
             <i class="bi bi-graph-up"></i> Business Tracker
         </a>
         <div class="d-flex align-items-center text-white">
-            <span class="me-3" >WearCraft</span>
+            <span class="me-3">WearCraft</span>
             <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
         </div>
     </div>
@@ -82,16 +88,15 @@
                                 <th>Date</th>
                                 <th>Category</th>
                                 <th>Description</th>
-                                <th>Product ID</th>
-                                <th>Quantity</th>
-                                <th>Unit Cost</th>
+                                <th>Product</th>
+                                <th>Details</th>
                                 <th>Total Amount</th>
                                 <th>Actions</th>
                             </tr>
                             </thead>
                             <tbody id="expensesTable">
                             <tr>
-                                <td colspan="8" class="text-center">Loading...</td>
+                                <td colspan="7" class="text-center">Loading...</td>
                             </tr>
                             </tbody>
                         </table>
@@ -104,7 +109,7 @@
 
 <!-- Expense Modal -->
 <div class="modal fade" id="expenseModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Add Expense</h5>
@@ -113,43 +118,93 @@
             <div class="modal-body">
                 <form id="expenseForm">
                     <input type="hidden" id="expenseId">
+
+                    <!-- Category Selection -->
                     <div class="mb-3">
-                        <label for="category" class="form-label">Category</label>
-                        <select class="form-select" id="category" required>
+                        <label for="category" class="form-label">Category *</label>
+                        <select class="form-select" id="category" required onchange="toggleExpenseFields()">
                             <option value="">Select Category</option>
-                            <option value="INVENTORY">Inventory</option>
-                            <option value="OVERHEAD">Overhead</option>
-                            <option value="RUNNING_COSTS">Running Costs</option>
+                            <option value="INVENTORY">Inventory costs</option>
+                            <option value="OVERHEAD">Overhead costs</option>
+                            <option value="RUNNING">Running costs</option>
                         </select>
                     </div>
+
+                    <!-- Common Fields -->
                     <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <input type="text" class="form-control" id="description" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="expenseDate" class="form-label">Date</label>
+                        <label for="expenseDate" class="form-label">Date *</label>
                         <input type="date" class="form-control" id="expenseDate" required>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="productId" class="form-label">Product ID (Optional)</label>
-                            <input type="text" class="form-control" id="productId">
+
+                    <!-- Inventory Cost Fields -->
+                    <div id="inventoryFields" class="category-fields">
+                        <div class="mb-3">
+                            <label for="inventoryProduct" class="form-label">Select Product *</label>
+                            <select class="form-select" id="inventoryProduct">
+                                <option value="">Choose a product...</option>
+                            </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="quantity" class="form-label">Quantity</label>
-                            <input type="number" class="form-control" id="quantity" min="0">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="inventoryQuantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" id="inventoryQuantity" min="1" step="1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="inventoryCostPerUnit" class="form-label">Cost per Product *</label>
+                                <input type="number" class="form-control" id="inventoryCostPerUnit" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="inventoryTotal">Total Amount</label>
+                            <input type="text" class="form-control" id="inventoryTotal" readonly>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="unitCost" class="form-label">Unit Cost</label>
-                            <input type="number" class="form-control" id="unitCost" step="0.01" min="0">
+
+                    <!-- Overhead Cost Fields -->
+                    <div id="overheadFields" class="category-fields">
+                        <div class="mb-3">
+                            <label for="overheadProductName" class="form-label">Product Name *</label>
+                            <input type="text" class="form-control" id="overheadProductName" placeholder="e.g., Office Equipment, Machinery">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="amount" class="form-label">Total Amount</label>
-                            <input type="number" class="form-control" id="amount" step="0.01" min="0" required>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="overheadCost" class="form-label">Cost *</label>
+                                <input type="number" class="form-control" id="overheadCost" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="depreciationMonths" class="form-label">Depreciation Months *</label>
+                                <input type="number" class="form-control" id="depreciationMonths" min="1" step="1" placeholder="e.g., 12, 24, 36">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="monthlyDepreciation" class="form-label">Monthly Depreciation</label>
+                            <input type="text" class="form-control" id="monthlyDepreciation" readonly>
                         </div>
                     </div>
+
+                    <!-- Running Cost Fields -->
+                    <div id="runningFields" class="category-fields">
+                        <div class="mb-3">
+                            <label for="runningProductName" class="form-label">Product Name *</label>
+                            <input type="text" class="form-control" id="runningProductName" placeholder="e.g., Electricity, Water, Internet">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="runningAmount" class="form-label">Amount *</label>
+                                <input type="number" class="form-control" id="runningAmount" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="unitsToDistribute" class="form-label">Units to Distribute *</label>
+                                <input type="number" class="form-control" id="unitsToDistribute" min="1" step="1" placeholder="Number of units">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="costPerUnit" class="form-label">Cost per Unit</label>
+                            <input type="text" class="form-control" id="costPerUnit" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Notes (Common) -->
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes (Optional)</label>
                         <textarea class="form-control" id="notes" rows="3"></textarea>
@@ -167,6 +222,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     let expenses = [];
+    let products = [];
     const modal = new bootstrap.Modal(document.getElementById('expenseModal'));
 
     async function loadExpenses() {
@@ -179,33 +235,85 @@
         }
     }
 
+    async function loadProducts() {
+        try {
+            const response = await fetch('/api/products');
+            products = await response.json();
+            populateProductDropdown();
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    }
+
+    function populateProductDropdown() {
+        const dropdown = document.getElementById('inventoryProduct');
+        dropdown.innerHTML = '<option value="">Choose a product...</option>' +
+            products.map(p => `<option value="${p.id}">${p.productName} (Stock: ${p.stockQuantity})</option>`).join('');
+    }
+
     function renderExpenses() {
         const tbody = document.getElementById('expensesTable');
 
         if (expenses.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No expenses found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No expenses found</td></tr>';
             return;
         }
 
-        tbody.innerHTML = expenses.map(expense => `
-            <tr>
-                <td>${expense.expenseDate}</td>
-                <td><span class="badge bg-info">${expense.category}</span></td>
-                <td>${expense.description}</td>
-                <td>${expense.productId || '-'}</td>
-                <td>${expense.quantity || '-'}</td>
-                <td>${expense.unitCost ? '$' + expense.unitCost.toFixed(2) : '-'}</td>
-                <td>$${expense.amount.toFixed(2)}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="editExpense(${expense.id})">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${expense.id})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = expenses.map(expense => {
+            let details = '';
+            let productInfo = '-';
+
+            if (expense.category === 'INVENTORY') {
+                details = `Qty: ${expense.quantity || 0}, Unit Cost: $${(expense.unitCost || 0).toFixed(2)}`;
+                productInfo = expense.productId || '-';
+            } else if (expense.category === 'OVERHEAD') {
+                details = `Depreciation: ${expense.depreciationMonths || 0} months`;
+                productInfo = expense.description || '-';
+            } else if (expense.category === 'RUNNING') {
+                details = `Units: ${expense.unitsToDistribute || 0}`;
+                productInfo = expense.description || '-';
+            }
+
+            const categoryDisplay = expense.category === 'INVENTORY' ? 'Inventory costs' :
+                                   expense.category === 'OVERHEAD' ? 'Overhead costs' : 'Running costs';
+
+            return `
+                <tr>
+                    <td>${expense.expenseDate}</td>
+                    <td><span class="badge bg-info">${categoryDisplay}</span></td>
+                    <td>${expense.notes || '-'}</td>
+                    <td>${productInfo}</td>
+                    <td>${details}</td>
+                    <td>$${expense.amount.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editExpense(${expense.id})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${expense.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function toggleExpenseFields() {
+        const category = document.getElementById('category').value;
+
+        // Hide all category fields
+        document.querySelectorAll('.category-fields').forEach(field => {
+            field.classList.remove('active');
+        });
+
+        // Show relevant fields
+        if (category === 'INVENTORY') {
+            document.getElementById('inventoryFields').classList.add('active');
+        } else if (category === 'OVERHEAD') {
+            document.getElementById('overheadFields').classList.add('active');
+        } else if (category === 'RUNNING') {
+            document.getElementById('runningFields').classList.add('active');
+        }
     }
 
     function clearForm() {
@@ -213,6 +321,7 @@
         document.getElementById('expenseId').value = '';
         document.getElementById('modalTitle').textContent = 'Add Expense';
         document.getElementById('expenseDate').valueAsDate = new Date();
+        toggleExpenseFields();
     }
 
     function editExpense(id) {
@@ -221,30 +330,91 @@
 
         document.getElementById('expenseId').value = expense.id;
         document.getElementById('category').value = expense.category;
-        document.getElementById('description').value = expense.description;
         document.getElementById('expenseDate').value = expense.expenseDate;
-        document.getElementById('productId').value = expense.productId || '';
-        document.getElementById('quantity').value = expense.quantity || '';
-        document.getElementById('unitCost').value = expense.unitCost || '';
-        document.getElementById('amount').value = expense.amount;
         document.getElementById('notes').value = expense.notes || '';
-        document.getElementById('modalTitle').textContent = 'Edit Expense';
 
+        toggleExpenseFields();
+
+        if (expense.category === 'INVENTORY') {
+            document.getElementById('inventoryProduct').value = expense.productId || '';
+            document.getElementById('inventoryQuantity').value = expense.quantity || '';
+            document.getElementById('inventoryCostPerUnit').value = expense.unitCost || '';
+            calculateInventoryTotal();
+        } else if (expense.category === 'OVERHEAD') {
+            document.getElementById('overheadProductName').value = expense.description || '';
+            document.getElementById('overheadCost').value = expense.amount || '';
+            document.getElementById('depreciationMonths').value = expense.depreciationMonths || '';
+            calculateDepreciation();
+        } else if (expense.category === 'RUNNING') {
+            document.getElementById('runningProductName').value = expense.description || '';
+            document.getElementById('runningAmount').value = expense.amount || '';
+            document.getElementById('unitsToDistribute').value = expense.unitsToDistribute || '';
+            calculateCostPerUnit();
+        }
+
+        document.getElementById('modalTitle').textContent = 'Edit Expense';
         modal.show();
     }
 
     async function saveExpense() {
         const id = document.getElementById('expenseId').value;
-        const data = {
-            category: document.getElementById('category').value,
-            description: document.getElementById('description').value,
+        const category = document.getElementById('category').value;
+
+        if (!category) {
+            alert('Please select a category');
+            return;
+        }
+
+        let data = {
+            category: category,
             expenseDate: document.getElementById('expenseDate').value,
-            productId: document.getElementById('productId').value || null,
-            quantity: parseInt(document.getElementById('quantity').value) || null,
-            unitCost: parseFloat(document.getElementById('unitCost').value) || null,
-            amount: parseFloat(document.getElementById('amount').value),
             notes: document.getElementById('notes').value || null
         };
+
+        // Build data based on category
+        if (category === 'INVENTORY') {
+            const productId = document.getElementById('inventoryProduct').value;
+            const quantity = parseInt(document.getElementById('inventoryQuantity').value);
+            const unitCost = parseFloat(document.getElementById('inventoryCostPerUnit').value);
+
+            if (!productId || !quantity || !unitCost) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            const product = products.find(p => p.id == productId);
+            data.description = product ? product.productName : 'Product';
+            data.productId = productId;
+            data.quantity = quantity;
+            data.unitCost = unitCost;
+            data.amount = quantity * unitCost;
+        } else if (category === 'OVERHEAD') {
+            const productName = document.getElementById('overheadProductName').value;
+            const cost = parseFloat(document.getElementById('overheadCost').value);
+            const months = parseInt(document.getElementById('depreciationMonths').value);
+
+            if (!productName || !cost || !months) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            data.description = productName;
+            data.amount = cost;
+            data.depreciationMonths = months;
+        } else if (category === 'RUNNING') {
+            const productName = document.getElementById('runningProductName').value;
+            const amount = parseFloat(document.getElementById('runningAmount').value);
+            const units = parseInt(document.getElementById('unitsToDistribute').value);
+
+            if (!productName || !amount || !units) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            data.description = productName;
+            data.amount = amount;
+            data.unitsToDistribute = units;
+        }
 
         try {
             const url = id ? `/api/expenses/${id}` : '/api/expenses';
@@ -289,21 +459,44 @@
         }
     }
 
-    // Auto-calculate total amount
-    document.getElementById('quantity').addEventListener('input', calculateTotal);
-    document.getElementById('unitCost').addEventListener('input', calculateTotal);
+    // Calculate inventory total
+    document.getElementById('inventoryQuantity').addEventListener('input', calculateInventoryTotal);
+    document.getElementById('inventoryCostPerUnit').addEventListener('input', calculateInventoryTotal);
 
-    function calculateTotal() {
-        const quantity = parseFloat(document.getElementById('quantity').value) || 0;
-        const unitCost = parseFloat(document.getElementById('unitCost').value) || 0;
-
-        if (quantity > 0 && unitCost > 0) {
-            document.getElementById('amount').value = (quantity * unitCost).toFixed(2);
-        }
+    function calculateInventoryTotal() {
+        const quantity = parseFloat(document.getElementById('inventoryQuantity').value) || 0;
+        const unitCost = parseFloat(document.getElementById('inventoryCostPerUnit').value) || 0;
+        const total = quantity * unitCost;
+        document.getElementById('inventoryTotal').value = total > 0 ? `$${total.toFixed(2)}` : '';
     }
 
-    // Load expenses on page load
-    document.addEventListener('DOMContentLoaded', loadExpenses);
+    // Calculate depreciation
+    document.getElementById('overheadCost').addEventListener('input', calculateDepreciation);
+    document.getElementById('depreciationMonths').addEventListener('input', calculateDepreciation);
+
+    function calculateDepreciation() {
+        const cost = parseFloat(document.getElementById('overheadCost').value) || 0;
+        const months = parseFloat(document.getElementById('depreciationMonths').value) || 0;
+        const monthly = months > 0 ? cost / months : 0;
+        document.getElementById('monthlyDepreciation').value = monthly > 0 ? `$${monthly.toFixed(2)}/month` : '';
+    }
+
+    // Calculate cost per unit
+    document.getElementById('runningAmount').addEventListener('input', calculateCostPerUnit);
+    document.getElementById('unitsToDistribute').addEventListener('input', calculateCostPerUnit);
+
+    function calculateCostPerUnit() {
+        const amount = parseFloat(document.getElementById('runningAmount').value) || 0;
+        const units = parseFloat(document.getElementById('unitsToDistribute').value) || 0;
+        const perUnit = units > 0 ? amount / units : 0;
+        document.getElementById('costPerUnit').value = perUnit > 0 ? `$${perUnit.toFixed(2)}/unit` : '';
+    }
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadExpenses();
+        loadProducts();
+    });
 </script>
 </body>
 </html>
