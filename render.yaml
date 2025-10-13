@@ -1,9 +1,7 @@
 services:
   - type: web
     name: business-expense-tracker
-    env: java
-    buildCommand: mvn clean package -DskipTests
-    startCommand: java -jar target/expense-tracker-1.0.0.jar
+    env: docker
     healthCheckPath: /login
     envVars:
       - key: SPRING_DATASOURCE_URL
@@ -20,6 +18,3 @@ services:
         sync: false
       - key: PORT
         value: 8080
-      - key: JAVA_TOOL_OPTIONS
-        value: -Xmx512m
-
