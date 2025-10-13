@@ -45,7 +45,7 @@
             <i class="bi bi-graph-up"></i> Business Tracker
         </a>
         <div class="d-flex align-items-center text-white">
-            <span class="me-3" >WearCraft</span>
+            <span class="me-3">WearCraft</span>
             <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
         </div>
     </div>
@@ -113,30 +113,28 @@
                 <form id="saleForm">
                     <input type="hidden" id="saleId">
                     <div class="mb-3">
-                        <label for="productId" class="form-label">Product ID</label>
-                        <input type="text" class="form-control" id="productId" required>
+                        <label for="productSelect" class="form-label">Select Product *</label>
+                        <select class="form-select" id="productSelect" required>
+                            <option value="">Choose a product...</option>
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label for="productName" class="form-label">Product Name</label>
-                        <input type="text" class="form-control" id="productName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="saleDate" class="form-label">Sale Date</label>
+                        <label for="saleDate" class="form-label">Sale Date *</label>
                         <input type="date" class="form-control" id="saleDate" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="quantity" class="form-label">Quantity</label>
+                            <label for="quantity" class="form-label">Quantity *</label>
                             <input type="number" class="form-control" id="quantity" min="1" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="unitPrice" class="form-label">Unit Price</label>
+                            <label for="unitPrice" class="form-label">Unit Price *</label>
                             <input type="number" class="form-control" id="unitPrice" step="0.01" min="0" required>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="totalAmount" class="form-label">Total Amount</label>
-                        <input type="number" class="form-control" id="totalAmount" step="0.01" min="0" readonly>
+                        <input type="text" class="form-control" id="totalAmount" readonly>
                     </div>
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes (Optional)</label>
@@ -155,6 +153,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     let sales = [];
+    let products = [];
     const modal = new bootstrap.Modal(document.getElementById('saleModal'));
 
     async function loadSales() {
@@ -167,6 +166,22 @@
         }
     }
 
+    async function loadProducts() {
+        try {
+            const response = await fetch('/api/products');
+            products = await response.json();
+            populateProductDropdown();
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    }
+
+    function populateProductDropdown() {
+        const dropdown = document.getElementById('productSelect');
+        dropdown.innerHTML = '<option value="">Choose a product...</option>' +
+            products.map(p => `<option value="${p.id}" data-name="${p.productName}" data-price="${p.sellingPrice}">${p.productName} (Stock: ${p.stockQuantity})</option>`).join('');
+    }
+
     function renderSales() {
         const tbody = document.getElementById('salesTable');
 
@@ -174,15 +189,15 @@
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">No sales found</td></tr>';
             return;
         }
-
+        console.log(sales);
         tbody.innerHTML = sales.map(sale => `
             <tr>
                 <td>${sale.saleDate}</td>
-                <td>${sale.productId}</td>
-                <td>${sale.productName}</td>
+                <td>${sale.product.id}</td>
+                <td>${sale.product.productName}</td>
                 <td>${sale.quantity}</td>
-                <td>${sale.unitPrice.toFixed(2)}</td>
-                <td><strong>${sale.totalAmount.toFixed(2)}</strong></td>
+                <td>₹${sale.unitPrice.toFixed(2)}</td>
+                <td><strong>₹${sale.totalAmount.toFixed(2)}</strong></td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary" onclick="editSale(${sale.id})">
                         <i class="bi bi-pencil"></i>
@@ -200,31 +215,50 @@
         document.getElementById('saleId').value = '';
         document.getElementById('modalTitle').textContent = 'Add Sale';
         document.getElementById('saleDate').valueAsDate = new Date();
-        document.getElementById('totalAmount').value = '0.00';
+        document.getElementById('totalAmount').value = '';
     }
+
+    // Auto-fill price when product is selected
+    document.getElementById('productSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const price = selectedOption.getAttribute('data-price');
+        if (price) {
+            document.getElementById('unitPrice').value = parseFloat(price).toFixed(2);
+            calculateTotal();
+        }
+    });
 
     function editSale(id) {
         const sale = sales.find(s => s.id === id);
         if (!sale) return;
 
         document.getElementById('saleId').value = sale.id;
-        document.getElementById('productId').value = sale.productId;
-        document.getElementById('productName').value = sale.productName;
+        document.getElementById('productSelect').value = sale.productId;
         document.getElementById('saleDate').value = sale.saleDate;
         document.getElementById('quantity').value = sale.quantity;
         document.getElementById('unitPrice').value = sale.unitPrice;
-        document.getElementById('totalAmount').value = sale.totalAmount;
         document.getElementById('notes').value = sale.notes || '';
+        calculateTotal();
         document.getElementById('modalTitle').textContent = 'Edit Sale';
 
         modal.show();
     }
 
     async function saveSale() {
+        const productId = document.getElementById('productSelect').value;
+
+        if (!productId) {
+            alert('Please select a product');
+            return;
+        }
+
+        const selectedOption = document.getElementById('productSelect').options[document.getElementById('productSelect').selectedIndex];
+        const productName = selectedOption.getAttribute('data-name');
+
         const id = document.getElementById('saleId').value;
         const data = {
-            productId: document.getElementById('productId').value,
-            productName: document.getElementById('productName').value,
+            productId: parseInt(productId),
+            productName: productName,
             saleDate: document.getElementById('saleDate').value,
             quantity: parseInt(document.getElementById('quantity').value),
             unitPrice: parseFloat(document.getElementById('unitPrice').value),
@@ -247,7 +281,8 @@
                 modal.hide();
                 loadSales();
             } else {
-                alert('Error saving sale');
+                const errorText = await response.text();
+                alert('Error saving sale: ' + errorText);
             }
         } catch (error) {
             console.error('Error saving sale:', error);
@@ -281,11 +316,15 @@
     function calculateTotal() {
         const quantity = parseFloat(document.getElementById('quantity').value) || 0;
         const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
-        document.getElementById('totalAmount').value = (quantity * unitPrice).toFixed(2);
+        const total = quantity * unitPrice;
+        document.getElementById('totalAmount').value = total > 0 ? `₹${total.toFixed(2)}` : '';
     }
 
-    // Load sales on page load
-    document.addEventListener('DOMContentLoaded', loadSales);
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSales();
+        loadProducts();
+    });
 </script>
 </body>
 </html>

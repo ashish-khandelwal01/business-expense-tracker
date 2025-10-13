@@ -86,7 +86,7 @@
                     <div class="card stat-card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                         <div class="card-body">
                             <h6 class="card-title">Monthly Expenses</h6>
-                            <div class="stat-value" id="monthlyExpenses">$0.00</div>
+                            <div class="stat-value" id="monthlyExpenses">₹0.00</div>
                         </div>
                     </div>
                 </div>
@@ -94,7 +94,7 @@
                     <div class="card stat-card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                         <div class="card-body">
                             <h6 class="card-title">Monthly Sales</h6>
-                            <div class="stat-value" id="monthlySales">$0.00</div>
+                            <div class="stat-value" id="monthlySales">₹0.00</div>
                         </div>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
                     <div class="card stat-card text-white" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
                         <div class="card-body">
                             <h6 class="card-title">Monthly Profit</h6>
-                            <div class="stat-value" id="profit">$0.00</div>
+                            <div class="stat-value" id="profit">₹0.00</div>
                         </div>
                     </div>
                 </div>
@@ -166,17 +166,21 @@
 <script>
     let monthlyChart, categoryChart;
 
+    // Fixed expense categories
+    const EXPENSE_CATEGORIES = ['Inventory costs', 'Overhead costs', 'Running costs'];
+
     // Fetch dashboard data
     async function loadDashboardData() {
         try {
             const summaryResponse = await fetch('/api/dashboard/summary');
             const summary = await summaryResponse.json();
+            document.getElementById('monthlyExpenses').textContent = `₹${summary.monthlyExpenses.toFixed(2)}`;
+            document.getElementById('monthlySales').textContent = `₹${summary.monthlySales.toFixed(2)}`;
+            document.getElementById('profit').textContent = `₹${summary.grossProfit.toFixed(2)}`;
 
-            document.getElementById('monthlyExpenses').textContent = `$${summary.monthlyExpenses.toFixed(2)}`;
-            document.getElementById('monthlySales').textContent = `$${summary.monthlySales.toFixed(2)}`;
-            document.getElementById('profit').textContent = `$${summary.profit.toFixed(2)}`;
-
-            renderCategoryChart(summary.expensesByCategory);
+            const expenseByCategory = await fetch('/api/dashboard/expenses-by-category');
+            const expenseByCategoryData = await expenseByCategory.json();
+            renderCategoryChart(expenseByCategoryData);
 
             const monthlyResponse = await fetch('/api/dashboard/monthly-data');
             const monthlyData = await monthlyResponse.json();
@@ -192,67 +196,91 @@
     }
 
     function renderMonthlyChart(data) {
-        const ctx = document.getElementById('monthlyChart').getContext('2d');
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
 
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const expenseData = Array(12).fill(0);
-        const salesData = Array(12).fill(0);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const expenseData = Array(12).fill(0);
+    const salesData = Array(12).fill(0);
 
-        data.expenses.forEach(item => {
-            expenseData[item[0] - 1] = item[1];
-        });
+    const monthlyArray = data?.data || [];
 
-        data.sales.forEach(item => {
-            salesData[item[0] - 1] = item[1];
-        });
+    monthlyArray.forEach(item => {
+        const index = item.month - 1;
+        expenseData[index] = item.expenses || 0;
+        salesData[index] = item.sales || 0;
+    });
 
-        if (monthlyChart) monthlyChart.destroy();
+    if (monthlyChart) monthlyChart.destroy();
 
-        monthlyChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: months,
-                datasets: [{
+    monthlyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
                     label: 'Sales',
                     data: salesData,
                     borderColor: '#4facfe',
                     backgroundColor: 'rgba(79, 172, 254, 0.1)',
                     tension: 0.4
-                }, {
+                },
+                {
                     label: 'Expenses',
                     data: expenseData,
                     borderColor: '#f5576c',
                     backgroundColor: 'rgba(245, 87, 108, 0.1)',
                     tension: 0.4
-                }]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toFixed(0);
-                            }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toFixed(0);
                         }
                     }
                 }
             }
-        });
+        }
+    });
     }
+
 
     function renderCategoryChart(categories) {
         const ctx = document.getElementById('categoryChart').getContext('2d');
 
-        const labels = Object.keys(categories);
-        const data = Object.values(categories);
+        // Default to empty object if null
+        const safeCategories = categories || {};
+
+        // Map backend keys to frontend labels
+        const keyMapping = {
+            'INVENTORY': 'Inventory costs',
+            'OVERHEAD': 'Overhead costs',
+            'RUNNING_COSTS': 'Running costs'
+        };
+
+        // Initialize all three categories with 0
+        const categoryData = {};
+        EXPENSE_CATEGORIES.forEach(cat => (categoryData[cat] = 0));
+
+        // Convert backend data into expected labels
+        Object.keys(safeCategories).forEach(key => {
+            const label = keyMapping[key];
+            if (label) {
+                categoryData[label] = safeCategories[key] || 0;
+            }
+        });
+
+        const labels = EXPENSE_CATEGORIES;
+        const data = labels.map(label => categoryData[label]);
 
         if (categoryChart) categoryChart.destroy();
 
@@ -262,26 +290,19 @@
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: [
-                        '#667eea',
-                        '#764ba2',
-                        '#f093fb',
-                        '#4facfe',
-                        '#43e97b'
-                    ]
+                    backgroundColor: ['#667eea', '#764ba2', '#f093fb']
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+                    legend: { position: 'bottom' }
                 }
             }
         });
     }
+
 
     function renderTopProducts(products) {
         const tbody = document.getElementById('topProductsTable');
@@ -290,13 +311,12 @@
             tbody.innerHTML = '<tr><td colspan="4" class="text-center">No products found</td></tr>';
             return;
         }
-
         tbody.innerHTML = products.slice(0, 10).map(product => `
             <tr>
-                <td>${product[0]}</td>
-                <td>${product[1]}</td>
-                <td>${product[2]}</td>
-                <td>$${parseFloat(product[3]).toFixed(2)}</td>
+                <td>${product.productId}</td>
+                <td>${product.productName}</td>
+                <td>${product.totalQuantity}</td>
+                <td>₹${parseFloat(product.totalRevenue).toFixed(2)}</td>
             </tr>
         `).join('');
     }
