@@ -14,7 +14,9 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "products")
+@Table(name = "products", indexes = {
+    @Index(name = "idx_product_name", columnList = "productName")
+})
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,4 +46,3 @@ public class Product {
         updatedAt = LocalDateTime.now();
     }
 }
-

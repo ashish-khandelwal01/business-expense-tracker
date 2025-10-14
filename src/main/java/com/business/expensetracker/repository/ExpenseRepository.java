@@ -18,6 +18,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.expenseDate BETWEEN :start AND :end")
     BigDecimal getTotalExpenseInRange(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
-    @Query("SELECT FUNCTION('MONTH', e.expenseDate) as month, SUM(e.amount) as total FROM Expense e WHERE FUNCTION('YEAR', e.expenseDate) = :year GROUP BY FUNCTION('MONTH', e.expenseDate) ORDER BY month")
-    List<Object[]> getMonthlyExpenses(@Param("year") int year);
+    @Query(value = "SELECT EXTRACT(MONTH FROM expense_date) AS month, SUM(amount) AS total " +
+                   "FROM expenses WHERE EXTRACT(YEAR FROM expense_date) = :year " +
+                   "GROUP BY month ORDER BY month", nativeQuery = true)
+    List<Object[]> getMonthlyExpenseTotals(@Param("year") int year);
 }

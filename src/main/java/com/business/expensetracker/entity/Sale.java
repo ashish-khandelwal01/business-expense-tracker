@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "sales")
+@Table(name = "sales", indexes = {
+    @Index(name = "idx_sale_date", columnList = "saleDate"),
+    @Index(name = "idx_sale_product_id", columnList = "product_id")
+})
 public class Sale {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -65,4 +68,3 @@ public class Sale {
         }
     }
 }
-

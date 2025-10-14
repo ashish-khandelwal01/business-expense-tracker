@@ -15,7 +15,11 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "expenses")
+@Table(name = "expenses", indexes = {
+    @Index(name = "idx_expense_date", columnList = "expenseDate"),
+    @Index(name = "idx_expense_category", columnList = "category"),
+    @Index(name = "idx_expense_product_id", columnList = "product_id")
+})
 public class Expense {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -106,4 +110,3 @@ public class Expense {
         RUNNING_COSTS
     }
 }
-
