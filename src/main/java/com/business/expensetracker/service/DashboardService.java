@@ -5,6 +5,8 @@ import com.business.expensetracker.entity.Sale;
 import com.business.expensetracker.repository.ExpenseRepository;
 import com.business.expensetracker.repository.SaleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -55,40 +57,51 @@ public class DashboardService {
         return summary;
     }
 
+    @Cacheable("monthlyData")
     public Map<String, Object> getMonthlyData() {
         int currentYear = LocalDate.now().getYear();
-        
-        List<Map<String, Object>> monthlyData = new ArrayList<>();
-        
-        for (int month = 1; month <= 12; month++) {
-            YearMonth yearMonth = YearMonth.of(currentYear, month);
-            LocalDate start = yearMonth.atDay(1);
-            LocalDate end = yearMonth.atEndOfMonth();
+        Map<Integer, BigDecimal> salesByMonth = new HashMap<>();
+        Map<Integer, BigDecimal> expensesByMonth = new HashMap<>();
 
-            BigDecimal sales = calculateMonthlySales(start, end);
-            BigDecimal expenses = calculateMonthlyExpenses(start, end);
-            BigDecimal overhead = calculateMonthlyOverhead(start, end);
-            BigDecimal directCosts = calculateDirectCosts(start, end);
-            BigDecimal grossProfit = sales.subtract(directCosts);
-            BigDecimal netProfit = grossProfit.subtract(overhead);
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("month", month);
-            data.put("monthName", yearMonth.getMonth().name());
-            data.put("sales", sales);
-            data.put("expenses", expenses);
-            data.put("directCosts", directCosts);
-            data.put("overhead", overhead);
-            data.put("grossProfit", grossProfit);
-            data.put("netProfit", netProfit);
-
-            monthlyData.add(data);
+        for (Object[] row : saleRepository.getMonthlySalesTotals(currentYear)) {
+            Integer month = ((Number) row[0]).intValue();
+            BigDecimal total = (BigDecimal) row[1];
+            salesByMonth.put(month, total);
+        }
+        for (Object[] row : expenseRepository.getMonthlyExpenseTotals(currentYear)) {
+            Integer month = ((Number) row[0]).intValue();
+            BigDecimal total = (BigDecimal) row[1];
+            expensesByMonth.put(month, total);
         }
 
+        List<Map<String, Object>> monthlyData = new ArrayList<>();
+        for (int month = 1; month <= 12; month++) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("month", month);
+            data.put("monthName", YearMonth.of(currentYear, month).getMonth().name());
+            data.put("sales", salesByMonth.getOrDefault(month, BigDecimal.ZERO));
+            data.put("expenses", expensesByMonth.getOrDefault(month, BigDecimal.ZERO));
+            monthlyData.add(data);
+        }
         Map<String, Object> result = new HashMap<>();
         result.put("year", currentYear);
         result.put("data", monthlyData);
         return result;
+    }
+
+    @Cacheable("topProducts")
+    public List<Map<String, Object>> getTopProducts() {
+        List<Object[]> results = saleRepository.findTopProductsByRevenue(PageRequest.of(0, 10));
+        List<Map<String, Object>> topProducts = new ArrayList<>();
+        for (Object[] row : results) {
+            Map<String, Object> productData = new HashMap<>();
+            productData.put("productId", row[0]);
+            productData.put("productName", row[1]);
+            productData.put("totalQuantity", row[2]);
+            productData.put("totalRevenue", row[3]);
+            topProducts.add(productData);
+        }
+        return topProducts;
     }
 
     public Map<String, BigDecimal> getExpensesByCategory() {
@@ -103,34 +116,6 @@ public class DashboardService {
                                 BigDecimal::add
                         )
                 ));
-    }
-
-    public List<Map<String, Object>> getTopProducts() {
-        List<Sale> sales = saleRepository.findAll();
-        
-        Map<Long, Map<String, Object>> productSales = new HashMap<>();
-        
-        for (Sale sale : sales) {
-            if (sale.getProduct() != null) {
-                Long productId = sale.getProduct().getId();
-                productSales.putIfAbsent(productId, new HashMap<>());
-                Map<String, Object> productData = productSales.get(productId);
-                
-                productData.put("productId", productId);
-                productData.put("productName", sale.getProduct().getProductName());
-                
-                int currentQuantity = (int) productData.getOrDefault("totalQuantity", 0);
-                productData.put("totalQuantity", currentQuantity + sale.getQuantity());
-                
-                BigDecimal currentRevenue = (BigDecimal) productData.getOrDefault("totalRevenue", BigDecimal.ZERO);
-                productData.put("totalRevenue", currentRevenue.add(sale.getTotalAmount()));
-            }
-        }
-        
-        return productSales.values().stream()
-                .sorted((a, b) -> ((BigDecimal) b.get("totalRevenue")).compareTo((BigDecimal) a.get("totalRevenue")))
-                .limit(10)
-                .collect(Collectors.toList());
     }
 
     private BigDecimal calculateMonthlySales(LocalDate start, LocalDate end) {
@@ -183,4 +168,3 @@ public class DashboardService {
         return profit.divide(sales, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100));
     }
 }
-

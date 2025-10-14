@@ -3,6 +3,7 @@ package com.business.expensetracker.service;
 import com.business.expensetracker.entity.Product;
 import com.business.expensetracker.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class ProductService {
         return productRepository.findAll();
     }
 
+    @Cacheable("products")
     public Optional<Product> getProductById(Long id) {
         return productRepository.findById(id);
     }

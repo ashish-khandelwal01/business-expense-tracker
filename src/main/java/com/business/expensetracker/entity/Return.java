@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "returns")
+@Table(name = "returns", indexes = {
+    @Index(name = "idx_return_date", columnList = "returnDate"),
+    @Index(name = "idx_return_product_id", columnList = "product_id")
+})
 public class Return {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -65,4 +68,3 @@ public class Return {
         }
     }
 }
-
