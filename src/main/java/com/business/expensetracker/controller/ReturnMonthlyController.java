@@ -75,9 +75,10 @@ public class ReturnMonthlyController {
             String product = (String) data.get("product");
             String dateStr = (String) data.get("returnDate");
             Integer quantity = ((Number) data.get("quantity")).intValue();
+            String website = (String) data.get("website");
 
             LocalDate returnDate = LocalDate.parse(dateStr);
-            ReturnMonthly record = returnMonthlyService.addReturnRecord(product, returnDate, quantity);
+            ReturnMonthly record = returnMonthlyService.addReturnRecord(product, returnDate, quantity, website);
 
             return ResponseEntity.ok(record);
         } catch (Exception e) {
@@ -97,9 +98,10 @@ public class ReturnMonthlyController {
             String product = (String) data.get("product");
             String dateStr = (String) data.get("returnDate");
             Integer quantity = ((Number) data.get("quantity")).intValue();
+            String website = (String) data.get("website");
 
             LocalDate returnDate = LocalDate.parse(dateStr);
-            ReturnMonthly record = returnMonthlyService.updateReturnRecord(id, product, returnDate, quantity);
+            ReturnMonthly record = returnMonthlyService.updateReturnRecord(id, product, returnDate, quantity, website);
 
             return ResponseEntity.ok(record);
         } catch (Exception e) {

@@ -31,6 +31,9 @@ public class SaleMonthly {
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(nullable = false)
+    private String website;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

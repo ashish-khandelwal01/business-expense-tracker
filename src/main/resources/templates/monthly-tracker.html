@@ -148,13 +148,23 @@
                                         <input type="text" class="form-control" id="saleProduct" name="product" required placeholder="e.g., Laptop">
                                     </div>
                                     <div class="col-md-6 mb-3">
+                                        <label for="saleWebsite" class="form-label">Website</label>
+                                        <select class="form-select" id="saleWebsite" name="website" required>
+                                            <option value="">Select Website</option>
+                                            <option value="flipkart">Flipkart</option>
+                                            <option value="meesho">Meesho</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
                                         <label for="saleDate" class="form-label">Sale Date</label>
                                         <input type="date" class="form-control" id="saleDate" name="saleDate" required>
                                     </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="saleQuantity" class="form-label">Quantity</label>
-                                    <input type="number" class="form-control" id="saleQuantity" name="quantity" required min="1" placeholder="0">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="saleQuantity" class="form-label">Quantity</label>
+                                        <input type="number" class="form-control" id="saleQuantity" name="quantity" required min="1" placeholder="0">
+                                    </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-check-circle"></i> Add Sale Record
@@ -173,13 +183,23 @@
                                         <input type="text" class="form-control" id="returnProduct" name="product" required placeholder="e.g., Laptop">
                                     </div>
                                     <div class="col-md-6 mb-3">
+                                        <label for="returnWebsite" class="form-label">Website</label>
+                                        <select class="form-select" id="returnWebsite" name="website" required>
+                                            <option value="">Select Website</option>
+                                            <option value="flipkart">Flipkart</option>
+                                            <option value="meesho">Meesho</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
                                         <label for="returnDate" class="form-label">Return Date</label>
                                         <input type="date" class="form-control" id="returnDate" name="returnDate" required>
                                     </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="returnQuantity" class="form-label">Quantity</label>
-                                    <input type="number" class="form-control" id="returnQuantity" name="quantity" required min="1" placeholder="0">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="returnQuantity" class="form-label">Quantity</label>
+                                        <input type="number" class="form-control" id="returnQuantity" name="quantity" required min="1" placeholder="0">
+                                    </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-check-circle"></i> Add Return Record
@@ -410,6 +430,7 @@
                                 <tr>
                                     <th>Date</th>
                                     <th>Product</th>
+                                    <th>Website</th>
                                     <th>Quantity</th>
                                     <th>Actions</th>
                                 </tr>
@@ -420,6 +441,7 @@
                         html += `<tr>
                             <td>${record.saleDate}</td>
                             <td>${record.product}</td>
+                            <td><span class="badge bg-info">${record.website}</span></td>
                             <td>${record.quantity}</td>
                             <td>
                                 <button class="btn btn-sm btn-danger" onclick="deleteSaleRecord(${record.id})">
@@ -456,6 +478,7 @@
                                 <tr>
                                     <th>Date</th>
                                     <th>Product</th>
+                                    <th>Website</th>
                                     <th>Quantity</th>
                                     <th>Actions</th>
                                 </tr>
@@ -466,6 +489,7 @@
                         html += `<tr>
                             <td>${record.returnDate}</td>
                             <td>${record.product}</td>
+                            <td><span class="badge bg-info">${record.website}</span></td>
                             <td>${record.quantity}</td>
                             <td>
                                 <button class="btn btn-sm btn-danger" onclick="deleteReturnRecord(${record.id})">
@@ -543,6 +567,23 @@
 
                 html += `</tbody></table></div>
 
+                    <h6 class="mb-3 mt-4">Website Breakdown (Sales)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Website</th>
+                                    <th>Total Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                Object.entries(salesStats.websiteBreakdown || {}).forEach(([website, quantity]) => {
+                    html += `<tr><td><span class="badge bg-info">${website}</span></td><td>${quantity}</td></tr>`;
+                });
+
+                html += `</tbody></table></div>
+
                     <h5 class="mt-4 mb-3">Returns Statistics</h5>
                     <div class="row mb-4">
                         <div class="col-md-4 mb-3">
@@ -586,7 +627,24 @@
                     html += `<tr><td>${product}</td><td>${quantity}</td></tr>`;
                 });
 
-                html += '</tbody></table></div>';
+                html += `</tbody></table></div>
+
+                    <h6 class="mb-3 mt-4">Website Breakdown (Returns)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Website</th>
+                                    <th>Total Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                Object.entries(returnsStats.websiteBreakdown || {}).forEach(([website, quantity]) => {
+                    html += `<tr><td><span class="badge bg-info">${website}</span></td><td>${quantity}</td></tr>`;
+                });
+
+                html += `</tbody></table></div>`;
 
                 document.getElementById('statisticsContainer').innerHTML = html;
             } catch (error) {

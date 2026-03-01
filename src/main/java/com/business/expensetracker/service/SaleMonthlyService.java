@@ -19,12 +19,13 @@ public class SaleMonthlyService {
     /**
      * Add a new sale record for the day
      */
-    public SaleMonthly addSaleRecord(String product, LocalDate saleDate, Integer quantity) {
+    public SaleMonthly addSaleRecord(String product, LocalDate saleDate, Integer quantity, String website) {
         SaleMonthly saleMonthly = new SaleMonthly();
         // Normalize product name to lowercase
         saleMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         saleMonthly.setSaleDate(saleDate);
         saleMonthly.setQuantity(quantity);
+        saleMonthly.setWebsite(website != null ? website.trim() : website);
         return saleMonthlyRepository.save(saleMonthly);
     }
 
@@ -58,12 +59,13 @@ public class SaleMonthlyService {
     /**
      * Update an existing sale record
      */
-    public SaleMonthly updateSaleRecord(Long id, String product, LocalDate saleDate, Integer quantity) {
+    public SaleMonthly updateSaleRecord(Long id, String product, LocalDate saleDate, Integer quantity, String website) {
         SaleMonthly saleMonthly = saleMonthlyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Sale record not found"));
         saleMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         saleMonthly.setSaleDate(saleDate);
         saleMonthly.setQuantity(quantity);
+        saleMonthly.setWebsite(website != null ? website.trim() : website);
         return saleMonthlyRepository.save(saleMonthly);
     }
 
@@ -88,6 +90,14 @@ public class SaleMonthlyService {
         stats.put("productBreakdown", records.stream()
                 .collect(Collectors.groupingBy(
                         SaleMonthly::getProduct,
+                        Collectors.summingInt(SaleMonthly::getQuantity)
+                ))
+        );
+
+        // Group by website
+        stats.put("websiteBreakdown", records.stream()
+                .collect(Collectors.groupingBy(
+                        SaleMonthly::getWebsite,
                         Collectors.summingInt(SaleMonthly::getQuantity)
                 ))
         );

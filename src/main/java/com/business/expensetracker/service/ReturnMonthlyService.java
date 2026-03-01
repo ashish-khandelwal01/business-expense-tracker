@@ -19,12 +19,13 @@ public class ReturnMonthlyService {
     /**
      * Add a new return record for the day
      */
-    public ReturnMonthly addReturnRecord(String product, LocalDate returnDate, Integer quantity) {
+    public ReturnMonthly addReturnRecord(String product, LocalDate returnDate, Integer quantity, String website) {
         ReturnMonthly returnMonthly = new ReturnMonthly();
         // Normalize product name to lowercase
         returnMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         returnMonthly.setReturnDate(returnDate);
         returnMonthly.setQuantity(quantity);
+        returnMonthly.setWebsite(website != null ? website.trim() : website);
         return returnMonthlyRepository.save(returnMonthly);
     }
 
@@ -58,12 +59,13 @@ public class ReturnMonthlyService {
     /**
      * Update an existing return record
      */
-    public ReturnMonthly updateReturnRecord(Long id, String product, LocalDate returnDate, Integer quantity) {
+    public ReturnMonthly updateReturnRecord(Long id, String product, LocalDate returnDate, Integer quantity, String website) {
         ReturnMonthly returnMonthly = returnMonthlyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Return record not found"));
         returnMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         returnMonthly.setReturnDate(returnDate);
         returnMonthly.setQuantity(quantity);
+        returnMonthly.setWebsite(website != null ? website.trim() : website);
         return returnMonthlyRepository.save(returnMonthly);
     }
 
@@ -88,6 +90,14 @@ public class ReturnMonthlyService {
         stats.put("productBreakdown", records.stream()
                 .collect(Collectors.groupingBy(
                         ReturnMonthly::getProduct,
+                        Collectors.summingInt(ReturnMonthly::getQuantity)
+                ))
+        );
+
+        // Group by website
+        stats.put("websiteBreakdown", records.stream()
+                .collect(Collectors.groupingBy(
+                        ReturnMonthly::getWebsite,
                         Collectors.summingInt(ReturnMonthly::getQuantity)
                 ))
         );

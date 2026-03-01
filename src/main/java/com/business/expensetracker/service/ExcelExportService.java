@@ -73,7 +73,7 @@ public class ExcelExportService {
         Row headerRow = sheet.createRow(0);
         headerRow.setHeightInPoints(20);
 
-        String[] headers = {"Date", "Product", "Quantity"};
+        String[] headers = {"Date", "Product", "Website", "Quantity"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -86,7 +86,8 @@ public class ExcelExportService {
             Row row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(record.getSaleDate().toString());
             row.createCell(1).setCellValue(record.getProduct());
-            row.createCell(2).setCellValue(record.getQuantity());
+            row.createCell(2).setCellValue(record.getWebsite());
+            row.createCell(3).setCellValue(record.getQuantity());
         }
 
         // Auto-size columns
@@ -103,7 +104,7 @@ public class ExcelExportService {
         Row headerRow = sheet.createRow(0);
         headerRow.setHeightInPoints(20);
 
-        String[] headers = {"Date", "Product", "Quantity"};
+        String[] headers = {"Date", "Product", "Website", "Quantity"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -116,7 +117,8 @@ public class ExcelExportService {
             Row row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(record.getReturnDate().toString());
             row.createCell(1).setCellValue(record.getProduct());
-            row.createCell(2).setCellValue(record.getQuantity());
+            row.createCell(2).setCellValue(record.getWebsite());
+            row.createCell(3).setCellValue(record.getQuantity());
         }
 
         // Auto-size columns
@@ -171,6 +173,24 @@ public class ExcelExportService {
             productRow.createCell(1).setCellValue(entry.getValue());
         }
 
+        rowNum++; // Empty row
+
+        // Website breakdown
+        Row websiteBreakdownHeader = sheet.createRow(rowNum++);
+        websiteBreakdownHeader.createCell(0).setCellValue("Website Breakdown");
+        websiteBreakdownHeader.createCell(0).setCellStyle(createHeaderStyle(sheet.getWorkbook()));
+
+        Row websiteHeader = sheet.createRow(rowNum++);
+        websiteHeader.createCell(0).setCellValue("Website");
+        websiteHeader.createCell(1).setCellValue("Total Quantity");
+
+        Map<String, Integer> websiteBreakdown = (Map<String, Integer>) statistics.get("websiteBreakdown");
+        for (Map.Entry<String, Integer> entry : websiteBreakdown.entrySet()) {
+            Row websiteRow = sheet.createRow(rowNum++);
+            websiteRow.createCell(0).setCellValue(entry.getKey());
+            websiteRow.createCell(1).setCellValue(entry.getValue());
+        }
+
         // Auto-size columns
         sheet.autoSizeColumn(0);
         sheet.autoSizeColumn(1);
@@ -220,6 +240,24 @@ public class ExcelExportService {
             Row productRow = sheet.createRow(rowNum++);
             productRow.createCell(0).setCellValue(entry.getKey());
             productRow.createCell(1).setCellValue(entry.getValue());
+        }
+
+        rowNum++; // Empty row
+
+        // Website breakdown
+        Row websiteBreakdownHeader = sheet.createRow(rowNum++);
+        websiteBreakdownHeader.createCell(0).setCellValue("Website Breakdown");
+        websiteBreakdownHeader.createCell(0).setCellStyle(createHeaderStyle(sheet.getWorkbook()));
+
+        Row websiteHeader = sheet.createRow(rowNum++);
+        websiteHeader.createCell(0).setCellValue("Website");
+        websiteHeader.createCell(1).setCellValue("Total Quantity");
+
+        Map<String, Integer> websiteBreakdown = (Map<String, Integer>) statistics.get("websiteBreakdown");
+        for (Map.Entry<String, Integer> entry : websiteBreakdown.entrySet()) {
+            Row websiteRow = sheet.createRow(rowNum++);
+            websiteRow.createCell(0).setCellValue(entry.getKey());
+            websiteRow.createCell(1).setCellValue(entry.getValue());
         }
 
         // Auto-size columns
