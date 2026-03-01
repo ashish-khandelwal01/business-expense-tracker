@@ -15,5 +15,11 @@ public class PageController {
     public String loginPage() {
         return "login";
     }
+
+    @GetMapping("/monthly-tracker")
+    public String monthlyTracker() {
+        return "monthly-tracker";
+    }
 }
+
 

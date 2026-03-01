@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Tracker - Business Expense Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link {
+            color: #495057;
+            padding: 15px 20px;
+            transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background-color: #e9ecef;
+            color: #667eea;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a4091 100%);
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s;
+        }
+        .nav-tabs .nav-link:hover {
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            background-color: transparent;
+            border-bottom-color: #667eea;
+        }
+        .stat-card {
+            padding: 20px;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="bi bi-graph-up"></i> Business Tracker
+        </a>
+        <div class="d-flex align-items-center text-white">
+            <span class="me-3">WearCraft</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-md-block sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/products"><i class="bi bi-box-seam"></i> Products</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/expenses"><i class="bi bi-receipt"></i> Expenses</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/sales"><i class="bi bi-cart-check"></i> Sales</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/returns"><i class="bi bi-arrow-return-left"></i> Returns</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/monthly-tracker"><i class="bi bi-calendar-month"></i> Monthly Tracker</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-calendar-month"></i> Monthly Sales & Returns Tracker</h2>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-4" id="trackerTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="sales-add-tab" data-bs-toggle="tab" data-bs-target="#sales-add" type="button" role="tab">
+                                <i class="bi bi-plus-circle"></i> Add Sale
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="returns-add-tab" data-bs-toggle="tab" data-bs-target="#returns-add" type="button" role="tab">
+                                <i class="bi bi-plus-circle"></i> Add Return
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="sales-view-tab" data-bs-toggle="tab" data-bs-target="#sales-view" type="button" role="tab">
+                                <i class="bi bi-eye"></i> View Sales
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="returns-view-tab" data-bs-toggle="tab" data-bs-target="#returns-view" type="button" role="tab">
+                                <i class="bi bi-eye"></i> View Returns
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab">
+                                <i class="bi bi-bar-chart"></i> Statistics
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="trackerTabContent">
+                        <!-- Add Sale Tab -->
+                        <div class="tab-pane fade show active" id="sales-add" role="tabpanel">
+                            <h5 class="mb-3">Add Sale Record</h5>
+                            <form id="salesForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="saleProduct" class="form-label">Product Name</label>
+                                        <input type="text" class="form-control" id="saleProduct" name="product" required placeholder="e.g., Laptop">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="saleDate" class="form-label">Sale Date</label>
+                                        <input type="date" class="form-control" id="saleDate" name="saleDate" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="saleQuantity" class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" id="saleQuantity" name="quantity" required min="1" placeholder="0">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Add Sale Record
+                                </button>
+                            </form>
+                            <div id="saleMessage" class="mt-3"></div>
+                        </div>
+
+                        <!-- Add Return Tab -->
+                        <div class="tab-pane fade" id="returns-add" role="tabpanel">
+                            <h5 class="mb-3">Add Return Record</h5>
+                            <form id="returnsForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="returnProduct" class="form-label">Product Name</label>
+                                        <input type="text" class="form-control" id="returnProduct" name="product" required placeholder="e.g., Laptop">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="returnDate" class="form-label">Return Date</label>
+                                        <input type="date" class="form-control" id="returnDate" name="returnDate" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="returnQuantity" class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" id="returnQuantity" name="quantity" required min="1" placeholder="0">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Add Return Record
+                                </button>
+                            </form>
+                            <div id="returnMessage" class="mt-3"></div>
+                        </div>
+
+                        <!-- View Sales Tab -->
+                        <div class="tab-pane fade" id="sales-view" role="tabpanel">
+                            <h5 class="mb-3">Sales Records</h5>
+                            <div class="row mb-3">
+                                <div class="col-md-3 mb-3">
+                                    <label for="saleYear" class="form-label">Year</label>
+                                    <input type="number" class="form-control" id="saleYear" min="2000" max="2100" value="2026">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="saleMonth" class="form-label">Month</label>
+                                    <select class="form-select" id="saleMonth">
+                                        <option value="1">January</option>
+                                        <option value="2">February</option>
+                                        <option value="3" selected>March</option>
+                                        <option value="4">April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3 d-flex align-items-end gap-2">
+                                    <button class="btn btn-primary" onclick="loadSalesRecords()">
+                                        <i class="bi bi-arrow-clockwise"></i> Load Records
+                                    </button>
+                                    <button class="btn btn-success" onclick="downloadSalesReport()">
+                                        <i class="bi bi-download"></i> Download Excel
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="salesRecords"></div>
+                        </div>
+
+                        <!-- View Returns Tab -->
+                        <div class="tab-pane fade" id="returns-view" role="tabpanel">
+                            <h5 class="mb-3">Returns Records</h5>
+                            <div class="row mb-3">
+                                <div class="col-md-3 mb-3">
+                                    <label for="returnYear" class="form-label">Year</label>
+                                    <input type="number" class="form-control" id="returnYear" min="2000" max="2100" value="2026">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="returnMonth" class="form-label">Month</label>
+                                    <select class="form-select" id="returnMonth">
+                                        <option value="1">January</option>
+                                        <option value="2">February</option>
+                                        <option value="3" selected>March</option>
+                                        <option value="4">April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3 d-flex align-items-end gap-2">
+                                    <button class="btn btn-primary" onclick="loadReturnsRecords()">
+                                        <i class="bi bi-arrow-clockwise"></i> Load Records
+                                    </button>
+                                    <button class="btn btn-success" onclick="downloadReturnsReport()">
+                                        <i class="bi bi-download"></i> Download Excel
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="returnsRecords"></div>
+                        </div>
+
+                        <!-- Statistics Tab -->
+                        <div class="tab-pane fade" id="stats" role="tabpanel">
+                            <h5 class="mb-3">Monthly Statistics</h5>
+                            <div class="row mb-3">
+                                <div class="col-md-3 mb-3">
+                                    <label for="statsYear" class="form-label">Year</label>
+                                    <input type="number" class="form-control" id="statsYear" min="2000" max="2100" value="2026">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="statsMonth" class="form-label">Month</label>
+                                    <select class="form-select" id="statsMonth">
+                                        <option value="1">January</option>
+                                        <option value="2">February</option>
+                                        <option value="3" selected>March</option>
+                                        <option value="4">April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3 d-flex align-items-end">
+                                    <button class="btn btn-primary" onclick="loadStatistics()">
+                                        <i class="bi bi-graph-up"></i> Load Statistics
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="statisticsContainer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set today's date as default
+        document.getElementById('saleDate').valueAsDate = new Date();
+        document.getElementById('returnDate').valueAsDate = new Date();
+
+        // Add Sale
+        document.getElementById('salesForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            // Convert quantity to number
+            data.quantity = parseInt(data.quantity);
+
+            try {
+                const response = await fetch('/api/sales-monthly', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                const messageDiv = document.getElementById('saleMessage');
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle"></i> Sale record added successfully!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                    e.target.reset();
+                    document.getElementById('saleDate').valueAsDate = new Date();
+                } else {
+                    messageDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-circle"></i> Error: ${result.error}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                }
+                setTimeout(() => messageDiv.innerHTML = '', 5000);
+            } catch (error) {
+                document.getElementById('saleMessage').innerHTML = `<div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle"></i> Error: ${error.message}
+                </div>`;
+            }
+        });
+
+        // Add Return
+        document.getElementById('returnsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            // Convert quantity to number
+            data.quantity = parseInt(data.quantity);
+
+            try {
+                const response = await fetch('/api/returns-monthly', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                const messageDiv = document.getElementById('returnMessage');
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle"></i> Return record added successfully!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                    e.target.reset();
+                    document.getElementById('returnDate').valueAsDate = new Date();
+                } else {
+                    messageDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-circle"></i> Error: ${result.error}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                }
+                setTimeout(() => messageDiv.innerHTML = '', 5000);
+            } catch (error) {
+                document.getElementById('returnMessage').innerHTML = `<div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle"></i> Error: ${error.message}
+                </div>`;
+            }
+        });
+
+        // Load Sales Records
+        async function loadSalesRecords() {
+            const year = document.getElementById('saleYear').value;
+            const month = document.getElementById('saleMonth').value;
+
+            try {
+                const response = await fetch(`/api/sales-monthly/month?year=${year}&month=${month}`);
+                const data = await response.json();
+
+                let html = '';
+                if (data.records && data.records.length > 0) {
+                    html = `<div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                    data.records.forEach(record => {
+                        html += `<tr>
+                            <td>${record.saleDate}</td>
+                            <td>${record.product}</td>
+                            <td>${record.quantity}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteSaleRecord(${record.id})">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table></div>';
+                } else {
+                    html = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> No sales records found for this month</div>';
+                }
+
+                document.getElementById('salesRecords').innerHTML = html;
+            } catch (error) {
+                document.getElementById('salesRecords').innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle"></i> Error loading records: ${error.message}</div>`;
+            }
+        }
+
+        // Load Returns Records
+        async function loadReturnsRecords() {
+            const year = document.getElementById('returnYear').value;
+            const month = document.getElementById('returnMonth').value;
+
+            try {
+                const response = await fetch(`/api/returns-monthly/month?year=${year}&month=${month}`);
+                const data = await response.json();
+
+                let html = '';
+                if (data.records && data.records.length > 0) {
+                    html = `<div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                    data.records.forEach(record => {
+                        html += `<tr>
+                            <td>${record.returnDate}</td>
+                            <td>${record.product}</td>
+                            <td>${record.quantity}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteReturnRecord(${record.id})">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table></div>';
+                } else {
+                    html = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> No return records found for this month</div>';
+                }
+
+                document.getElementById('returnsRecords').innerHTML = html;
+            } catch (error) {
+                document.getElementById('returnsRecords').innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle"></i> Error loading records: ${error.message}</div>`;
+            }
+        }
+
+        // Load Statistics
+        async function loadStatistics() {
+            const year = document.getElementById('statsYear').value;
+            const month = document.getElementById('statsMonth').value;
+
+            try {
+                const salesResponse = await fetch(`/api/sales-monthly/statistics?year=${year}&month=${month}`);
+                const returnsResponse = await fetch(`/api/returns-monthly/statistics?year=${year}&month=${month}`);
+
+                const salesStats = await salesResponse.json();
+                const returnsStats = await returnsResponse.json();
+
+                let html = `
+                    <h5 class="mt-4 mb-3">Sales Statistics</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="card stat-card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="card-body text-center">
+                                    <p class="mb-2">Total Records</p>
+                                    <p class="stat-value mb-0">${salesStats.totalRecords}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card stat-card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <div class="card-body text-center">
+                                    <p class="mb-2">Total Quantity Sold</p>
+                                    <p class="stat-value mb-0">${salesStats.totalQuantity}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card stat-card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <div class="card-body text-center">
+                                    <p class="mb-2">Days with Sales</p>
+                                    <p class="stat-value mb-0">${salesStats.totalDays}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="mb-3">Product Breakdown (Sales)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Total Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                Object.entries(salesStats.productBreakdown || {}).forEach(([product, quantity]) => {
+                    html += `<tr><td>${product}</td><td>${quantity}</td></tr>`;
+                });
+
+                html += `</tbody></table></div>
+
+                    <h5 class="mt-4 mb-3">Returns Statistics</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="card stat-card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="card-body text-center">
+                                    <p class="mb-2">Total Records</p>
+                                    <p class="stat-value mb-0">${returnsStats.totalRecords}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card stat-card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <div class="card-body text-center">
+                                    <p class="mb-2">Total Quantity Returned</p>
+                                    <p class="stat-value mb-0">${returnsStats.totalQuantity}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card stat-card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <div class="card-body text-center">
+                                    <p class="mb-2">Days with Returns</p>
+                                    <p class="stat-value mb-0">${returnsStats.totalDays}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="mb-3">Product Breakdown (Returns)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Total Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                Object.entries(returnsStats.productBreakdown || {}).forEach(([product, quantity]) => {
+                    html += `<tr><td>${product}</td><td>${quantity}</td></tr>`;
+                });
+
+                html += '</tbody></table></div>';
+
+                document.getElementById('statisticsContainer').innerHTML = html;
+            } catch (error) {
+                document.getElementById('statisticsContainer').innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle"></i> Error loading statistics: ${error.message}</div>`;
+            }
+        }
+
+        // Download Reports
+        function downloadSalesReport() {
+            const year = document.getElementById('saleYear').value;
+            const month = document.getElementById('saleMonth').value;
+            window.location.href = `/api/sales-monthly/download?year=${year}&month=${month}`;
+        }
+
+        function downloadReturnsReport() {
+            const year = document.getElementById('returnYear').value;
+            const month = document.getElementById('returnMonth').value;
+            window.location.href = `/api/returns-monthly/download?year=${year}&month=${month}`;
+        }
+
+        // Delete functions
+        async function deleteSaleRecord(id) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                try {
+                    await fetch(`/api/sales-monthly/${id}`, { method: 'DELETE' });
+                    loadSalesRecords();
+                } catch (error) {
+                    alert('Error deleting record: ' + error.message);
+                }
+            }
+        }
+
+        async function deleteReturnRecord(id) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                try {
+                    await fetch(`/api/returns-monthly/${id}`, { method: 'DELETE' });
+                    loadReturnsRecords();
+                } catch (error) {
+                    alert('Error deleting record: ' + error.message);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+
