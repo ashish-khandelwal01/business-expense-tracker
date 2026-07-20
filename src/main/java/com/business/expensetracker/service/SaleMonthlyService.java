@@ -2,6 +2,7 @@ package com.business.expensetracker.service;
 
 import com.business.expensetracker.entity.SaleMonthly;
 import com.business.expensetracker.repository.SaleMonthlyRepository;
+import com.business.expensetracker.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +16,15 @@ public class SaleMonthlyService {
 
     @Autowired
     private SaleMonthlyRepository saleMonthlyRepository;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     /**
      * Add a new sale record for the day
      */
     public SaleMonthly addSaleRecord(String product, LocalDate saleDate, Integer quantity, String website) {
         SaleMonthly saleMonthly = new SaleMonthly();
+        saleMonthly.setOwner(currentUserService.getCurrentUser());
         // Normalize product name to lowercase
         saleMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         saleMonthly.setSaleDate(saleDate);
@@ -35,7 +39,7 @@ public class SaleMonthlyService {
     public List<SaleMonthly> getMonthlyRecords(int year, int month) {
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.plusMonths(1).minusDays(1);
-        return saleMonthlyRepository.findBySaleDateBetween(startDate, endDate);
+        return saleMonthlyRepository.findBySaleDateBetweenAndOwner(startDate, endDate, currentUserService.getCurrentUser());
     }
 
     /**
@@ -53,14 +57,14 @@ public class SaleMonthlyService {
      * Get all sale records for a specific date
      */
     public List<SaleMonthly> getDailyRecords(LocalDate saleDate) {
-        return saleMonthlyRepository.findBySaleDateBetween(saleDate, saleDate);
+        return saleMonthlyRepository.findBySaleDateBetweenAndOwner(saleDate, saleDate, currentUserService.getCurrentUser());
     }
 
     /**
      * Update an existing sale record
      */
     public SaleMonthly updateSaleRecord(Long id, String product, LocalDate saleDate, Integer quantity, String website) {
-        SaleMonthly saleMonthly = saleMonthlyRepository.findById(id)
+        SaleMonthly saleMonthly = saleMonthlyRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Sale record not found"));
         saleMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         saleMonthly.setSaleDate(saleDate);
@@ -73,7 +77,9 @@ public class SaleMonthlyService {
      * Delete a sale record
      */
     public void deleteSaleRecord(Long id) {
-        saleMonthlyRepository.deleteById(id);
+        SaleMonthly saleMonthly = saleMonthlyRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
+                .orElseThrow(() -> new RuntimeException("Sale record not found"));
+        saleMonthlyRepository.delete(saleMonthly);
     }
 
     /**
@@ -105,4 +111,3 @@ public class SaleMonthlyService {
         return stats;
     }
 }
-

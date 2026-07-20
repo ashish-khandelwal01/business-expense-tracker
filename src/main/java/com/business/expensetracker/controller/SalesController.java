@@ -5,6 +5,7 @@ import com.business.expensetracker.entity.Sale;
 import com.business.expensetracker.repository.ProductRepository;
 import com.business.expensetracker.repository.SaleRepository;
 import com.business.expensetracker.service.ProductService;
+import com.business.expensetracker.service.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -27,6 +28,8 @@ public class SalesController {
     
     @Autowired
     private ProductService productService;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     @GetMapping("/sales")
     public String salesPage(Model model) {
@@ -36,7 +39,7 @@ public class SalesController {
     @GetMapping("/api/sales")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getAllSales() {
-        List<Sale> sales = saleRepository.findAll();
+        List<Sale> sales = saleRepository.findAllByOwner(currentUserService.getCurrentUser());
         List<Map<String, Object>> salesData = sales.stream().map(sale -> {
             Map<String, Object> data = new HashMap<>();
             data.put("id", sale.getId());
@@ -65,9 +68,10 @@ public class SalesController {
     public ResponseEntity<?> addSale(@RequestBody Map<String, Object> saleData) {
         try {
             Sale sale = new Sale();
+            sale.setOwner(currentUserService.getCurrentUser());
             
             Long productId = Long.valueOf(saleData.get("productId").toString());
-            Product product = productRepository.findById(productId)
+            Product product = productRepository.findByIdAndOwner(productId, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
             
             sale.setProduct(product);
@@ -92,7 +96,7 @@ public class SalesController {
     @ResponseBody
     public ResponseEntity<?> updateSale(@PathVariable Long id, @RequestBody Map<String, Object> saleData) {
         try {
-            Sale sale = saleRepository.findById(id)
+            Sale sale = saleRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Sale not found"));
             
             // Revert previous stock change
@@ -102,7 +106,7 @@ public class SalesController {
             
             // Apply new values
             Long productId = Long.valueOf(saleData.get("productId").toString());
-            Product product = productRepository.findById(productId)
+            Product product = productRepository.findByIdAndOwner(productId, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
             
             sale.setProduct(product);
@@ -127,7 +131,7 @@ public class SalesController {
     @ResponseBody
     public ResponseEntity<?> deleteSale(@PathVariable Long id) {
         try {
-            Sale sale = saleRepository.findById(id)
+            Sale sale = saleRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Sale not found"));
             
             // Restore stock when deleting sale
@@ -135,11 +139,10 @@ public class SalesController {
             int quantity = sale.getQuantity();
             productService.updateStock(productId, quantity);
             
-            saleRepository.deleteById(id);
+            saleRepository.delete(sale);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
-

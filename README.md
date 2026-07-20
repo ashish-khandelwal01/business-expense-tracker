@@ -17,7 +17,7 @@ A comprehensive Spring Boot application for tracking business expenses, inventor
   - Top selling products
 - ✅ **JWT Authentication** - Secure API access with JWT tokens
 - ✅ **Cookie-based UI Authentication** - Seamless user experience
-- ✅ **Single Admin User** - Simple login system (no registration needed)
+- ✅ **Multi-user Data Isolation** - Every account sees and manages only its own records
 
 ## Tech Stack
 
@@ -135,6 +135,8 @@ java -jar target/expense-tracker-1.0.0.jar
 - Passwords are hashed using BCrypt
 - CSRF protection is disabled (stateless JWT authentication)
 - Use HTTPS in production
+- Each product, expense, sale, return, and monthly tracker entry is associated with its creator. IDs from another account cannot be read, edited, or deleted.
+- Existing data is assigned once to the bootstrap administrator when the updated application first starts.
 
 ## Future Enhancements
 

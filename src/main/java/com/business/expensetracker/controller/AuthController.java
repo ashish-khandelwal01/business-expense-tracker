@@ -1,11 +1,16 @@
 package com.business.expensetracker.controller;
 
 import com.business.expensetracker.config.JwtUtil;
+import com.business.expensetracker.entity.User;
+import com.business.expensetracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.Cookie;
@@ -18,6 +23,31 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @PostMapping("/register")
+    public ResponseEntity<Map<String, String>> register(@RequestBody Map<String, String> request) {
+        String username = request.get("username") == null ? "" : request.get("username").trim();
+        String password = request.get("password");
+        if (!username.matches("[A-Za-z0-9_.-]{3,50}")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Username must be 3-50 characters and use only letters, numbers, ., _, or -"));
+        }
+        if (password == null || password.length() < 8) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Password must be at least 8 characters"));
+        }
+        if (userRepository.existsByUsername(username)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "Username is already in use"));
+        }
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole("USER");
+        userRepository.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Account created. Please log in."));
+    }
 
     @PostMapping("/login")
     public Map<String, String> login(@RequestBody Map<String, String> loginRequest, HttpServletResponse response) {
