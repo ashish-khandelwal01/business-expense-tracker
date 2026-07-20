@@ -23,7 +23,7 @@
     <div class="container-fluid">
         <a class="navbar-brand" href="/dashboard"><i class="bi bi-graph-up"></i> Business Tracker</a>
         <div class="d-flex align-items-center text-white">
-            <span class="me-3">Admin</span>
+            <span class="me-3" th:text="${currentUsername}">User</span>
             <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
         </div>
     </div>
@@ -282,4 +282,3 @@
 </script>
 </body>
 </html>
-

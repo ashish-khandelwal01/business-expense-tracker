@@ -5,6 +5,7 @@ import com.business.expensetracker.entity.Return;
 import com.business.expensetracker.repository.ProductRepository;
 import com.business.expensetracker.repository.ReturnRepository;
 import com.business.expensetracker.service.ProductService;
+import com.business.expensetracker.service.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -27,6 +28,8 @@ public class ReturnController {
     
     @Autowired
     private ProductService productService;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     @GetMapping("/returns")
     public String returnsPage(Model model) {
@@ -36,7 +39,7 @@ public class ReturnController {
     @GetMapping("/api/returns")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getAllReturns() {
-        List<Return> returns = returnRepository.findAll();
+        List<Return> returns = returnRepository.findAllByOwner(currentUserService.getCurrentUser());
         List<Map<String, Object>> returnsData = returns.stream().map(returnItem -> {
             Map<String, Object> data = new HashMap<>();
             data.put("id", returnItem.getId());
@@ -65,9 +68,10 @@ public class ReturnController {
     public ResponseEntity<?> addReturn(@RequestBody Map<String, Object> returnData) {
         try {
             Return returnItem = new Return();
+            returnItem.setOwner(currentUserService.getCurrentUser());
             
             Long productId = Long.valueOf(returnData.get("productId").toString());
-            Product product = productRepository.findById(productId)
+            Product product = productRepository.findByIdAndOwner(productId, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
             
             returnItem.setProduct(product);
@@ -92,7 +96,7 @@ public class ReturnController {
     @ResponseBody
     public ResponseEntity<?> updateReturn(@PathVariable Long id, @RequestBody Map<String, Object> returnData) {
         try {
-            Return returnItem = returnRepository.findById(id)
+            Return returnItem = returnRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Return not found"));
             
             // Revert previous stock change
@@ -102,7 +106,7 @@ public class ReturnController {
             
             // Apply new values
             Long productId = Long.valueOf(returnData.get("productId").toString());
-            Product product = productRepository.findById(productId)
+            Product product = productRepository.findByIdAndOwner(productId, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
             
             returnItem.setProduct(product);
@@ -127,7 +131,7 @@ public class ReturnController {
     @ResponseBody
     public ResponseEntity<?> deleteReturn(@PathVariable Long id) {
         try {
-            Return returnItem = returnRepository.findById(id)
+            Return returnItem = returnRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Return not found"));
             
             // Revert stock change when deleting return
@@ -135,11 +139,10 @@ public class ReturnController {
             int quantity = returnItem.getQuantity();
             productService.updateStock(productId, -quantity);
             
-            returnRepository.deleteById(id);
+            returnRepository.delete(returnItem);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
-

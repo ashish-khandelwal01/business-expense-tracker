@@ -2,10 +2,10 @@ package com.business.expensetracker.service;
 
 import com.business.expensetracker.entity.Expense;
 import com.business.expensetracker.entity.Sale;
+import com.business.expensetracker.entity.User;
 import com.business.expensetracker.repository.ExpenseRepository;
 import com.business.expensetracker.repository.SaleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -24,8 +24,11 @@ public class DashboardService {
 
     @Autowired
     private SaleRepository saleRepository;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     public Map<String, Object> getDashboardSummary() {
+        User user = currentUserService.getCurrentUser();
         LocalDate now = LocalDate.now();
         int currentYear = now.getYear();
         int currentMonth = now.getMonthValue();
@@ -34,12 +37,12 @@ public class DashboardService {
         LocalDate monthStart = YearMonth.of(currentYear, currentMonth).atDay(1);
         LocalDate monthEnd = YearMonth.of(currentYear, currentMonth).atEndOfMonth();
 
-        BigDecimal monthlyExpenses = calculateMonthlyExpenses(monthStart, monthEnd);
-        BigDecimal monthlySales = calculateMonthlySales(monthStart, monthEnd);
-        BigDecimal monthlyOverhead = calculateMonthlyOverhead(monthStart, monthEnd);
+        BigDecimal monthlyExpenses = calculateMonthlyExpenses(user, monthStart, monthEnd);
+        BigDecimal monthlySales = calculateMonthlySales(user, monthStart, monthEnd);
+        BigDecimal monthlyOverhead = calculateMonthlyOverhead(user, monthStart, monthEnd);
 
         // Calculate gross profit (sales - direct costs: inventory + running costs)
-        BigDecimal directCosts = calculateDirectCosts(monthStart, monthEnd);
+        BigDecimal directCosts = calculateDirectCosts(user, monthStart, monthEnd);
         BigDecimal grossProfit = monthlySales.subtract(directCosts);
 
         // Calculate net profit (gross profit - overhead depreciation)
@@ -57,18 +60,18 @@ public class DashboardService {
         return summary;
     }
 
-    @Cacheable("monthlyData")
     public Map<String, Object> getMonthlyData() {
+        User user = currentUserService.getCurrentUser();
         int currentYear = LocalDate.now().getYear();
         Map<Integer, BigDecimal> salesByMonth = new HashMap<>();
         Map<Integer, BigDecimal> expensesByMonth = new HashMap<>();
 
-        for (Object[] row : saleRepository.getMonthlySalesTotals(currentYear)) {
+        for (Object[] row : saleRepository.getMonthlySalesTotals(user.getId(), currentYear)) {
             Integer month = ((Number) row[0]).intValue();
             BigDecimal total = (BigDecimal) row[1];
             salesByMonth.put(month, total);
         }
-        for (Object[] row : expenseRepository.getMonthlyExpenseTotals(currentYear)) {
+        for (Object[] row : expenseRepository.getMonthlyExpenseTotals(user.getId(), currentYear)) {
             Integer month = ((Number) row[0]).intValue();
             BigDecimal total = (BigDecimal) row[1];
             expensesByMonth.put(month, total);
@@ -89,9 +92,9 @@ public class DashboardService {
         return result;
     }
 
-    @Cacheable("topProducts")
     public List<Map<String, Object>> getTopProducts() {
-        List<Object[]> results = saleRepository.findTopProductsByRevenue(PageRequest.of(0, 10));
+        List<Object[]> results = saleRepository.findTopProductsByRevenue(
+                currentUserService.getCurrentUser(), PageRequest.of(0, 10));
         List<Map<String, Object>> topProducts = new ArrayList<>();
         for (Object[] row : results) {
             Map<String, Object> productData = new HashMap<>();
@@ -105,7 +108,7 @@ public class DashboardService {
     }
 
     public Map<String, BigDecimal> getExpensesByCategory() {
-        List<Expense> expenses = expenseRepository.findAll();
+        List<Expense> expenses = expenseRepository.findAllByOwner(currentUserService.getCurrentUser());
         
         return expenses.stream()
                 .collect(Collectors.groupingBy(
@@ -118,20 +121,20 @@ public class DashboardService {
                 ));
     }
 
-    private BigDecimal calculateMonthlySales(LocalDate start, LocalDate end) {
-        List<Sale> sales = saleRepository.findBySaleDateBetween(start, end);
+    private BigDecimal calculateMonthlySales(User user, LocalDate start, LocalDate end) {
+        List<Sale> sales = saleRepository.findBySaleDateBetweenAndOwner(start, end, user);
         return sales.stream()
                 .map(Sale::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private BigDecimal calculateMonthlyExpenses(LocalDate start, LocalDate end) {
-        BigDecimal total = expenseRepository.getTotalExpenseInRange(start, end);
+    private BigDecimal calculateMonthlyExpenses(User user, LocalDate start, LocalDate end) {
+        BigDecimal total = expenseRepository.getTotalExpenseInRange(user, start, end);
         return total != null ? total : BigDecimal.ZERO;
     }
 
-    private BigDecimal calculateMonthlyOverhead(LocalDate start, LocalDate end) {
-        List<Expense> overheadExpenses = expenseRepository.findAll().stream()
+    private BigDecimal calculateMonthlyOverhead(User user, LocalDate start, LocalDate end) {
+        List<Expense> overheadExpenses = expenseRepository.findAllByOwner(user).stream()
                 .filter(e -> e.getCategory() == Expense.ExpenseCategory.OVERHEAD)
                 .filter(e -> isOverheadActiveInPeriod(e, start, end))
                 .collect(Collectors.toList());
@@ -141,8 +144,8 @@ public class DashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private BigDecimal calculateDirectCosts(LocalDate start, LocalDate end) {
-        List<Expense> directExpenses = expenseRepository.findAll().stream()
+    private BigDecimal calculateDirectCosts(User user, LocalDate start, LocalDate end) {
+        List<Expense> directExpenses = expenseRepository.findAllByOwner(user).stream()
                 .filter(e -> e.getCategory() == Expense.ExpenseCategory.INVENTORY || 
                             e.getCategory() == Expense.ExpenseCategory.RUNNING_COSTS)
                 .filter(e -> !e.getExpenseDate().isBefore(start) && !e.getExpenseDate().isAfter(end))

@@ -4,6 +4,7 @@ import com.business.expensetracker.entity.Expense;
 import com.business.expensetracker.entity.Product;
 import com.business.expensetracker.repository.ExpenseRepository;
 import com.business.expensetracker.repository.ProductRepository;
+import com.business.expensetracker.service.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -23,6 +24,8 @@ public class ExpenseController {
     
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     @GetMapping("/expenses")
     public String expensesPage(Model model) {
@@ -32,7 +35,7 @@ public class ExpenseController {
     @GetMapping("/api/expenses")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getAllExpenses() {
-        List<Expense> expenses = expenseRepository.findAll();
+        List<Expense> expenses = expenseRepository.findAllByOwner(currentUserService.getCurrentUser());
         List<Map<String, Object>> expenseData = expenses.stream().map(expense -> {
             Map<String, Object> data = new HashMap<>();
             data.put("id", expense.getId());
@@ -70,6 +73,7 @@ public class ExpenseController {
     public ResponseEntity<?> addExpense(@RequestBody Map<String, Object> expenseData) {
         try {
             Expense expense = new Expense();
+            expense.setOwner(currentUserService.getCurrentUser());
             expense.setCategory(Expense.ExpenseCategory.valueOf((String) expenseData.get("category")));
             expense.setExpenseDate(java.time.LocalDate.parse((String) expenseData.get("expenseDate")));
             expense.setDescription((String) expenseData.get("description"));
@@ -83,7 +87,7 @@ public class ExpenseController {
             // Set product if provided
             if (expenseData.get("productId") != null) {
                 Long productId = Long.valueOf(expenseData.get("productId").toString());
-                Product product = productRepository.findById(productId)
+                Product product = productRepository.findByIdAndOwner(productId, currentUserService.getCurrentUser())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
                 expense.setProduct(product);
             }
@@ -113,7 +117,7 @@ public class ExpenseController {
     @ResponseBody
     public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody Map<String, Object> expenseData) {
         try {
-            Expense expense = expenseRepository.findById(id)
+            Expense expense = expenseRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
                 
             expense.setCategory(Expense.ExpenseCategory.valueOf((String) expenseData.get("category")));
@@ -131,7 +135,7 @@ public class ExpenseController {
             // Set product if provided
             if (expenseData.get("productId") != null) {
                 Long productId = Long.valueOf(expenseData.get("productId").toString());
-                Product product = productRepository.findById(productId)
+                Product product = productRepository.findByIdAndOwner(productId, currentUserService.getCurrentUser())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
                 expense.setProduct(product);
             }
@@ -171,11 +175,12 @@ public class ExpenseController {
     @ResponseBody
     public ResponseEntity<?> deleteExpense(@PathVariable Long id) {
         try {
-            expenseRepository.deleteById(id);
+            Expense expense = expenseRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
+            expenseRepository.delete(expense);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
-

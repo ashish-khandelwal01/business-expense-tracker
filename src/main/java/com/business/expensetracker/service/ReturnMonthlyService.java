@@ -2,6 +2,7 @@ package com.business.expensetracker.service;
 
 import com.business.expensetracker.entity.ReturnMonthly;
 import com.business.expensetracker.repository.ReturnMonthlyRepository;
+import com.business.expensetracker.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +16,15 @@ public class ReturnMonthlyService {
 
     @Autowired
     private ReturnMonthlyRepository returnMonthlyRepository;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     /**
      * Add a new return record for the day
      */
     public ReturnMonthly addReturnRecord(String product, LocalDate returnDate, Integer quantity, String website) {
         ReturnMonthly returnMonthly = new ReturnMonthly();
+        returnMonthly.setOwner(currentUserService.getCurrentUser());
         // Normalize product name to lowercase
         returnMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         returnMonthly.setReturnDate(returnDate);
@@ -35,7 +39,7 @@ public class ReturnMonthlyService {
     public List<ReturnMonthly> getMonthlyRecords(int year, int month) {
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.plusMonths(1).minusDays(1);
-        return returnMonthlyRepository.findByReturnDateBetween(startDate, endDate);
+        return returnMonthlyRepository.findByReturnDateBetweenAndOwner(startDate, endDate, currentUserService.getCurrentUser());
     }
 
     /**
@@ -53,14 +57,14 @@ public class ReturnMonthlyService {
      * Get all return records for a specific date
      */
     public List<ReturnMonthly> getDailyRecords(LocalDate returnDate) {
-        return returnMonthlyRepository.findByReturnDateBetween(returnDate, returnDate);
+        return returnMonthlyRepository.findByReturnDateBetweenAndOwner(returnDate, returnDate, currentUserService.getCurrentUser());
     }
 
     /**
      * Update an existing return record
      */
     public ReturnMonthly updateReturnRecord(Long id, String product, LocalDate returnDate, Integer quantity, String website) {
-        ReturnMonthly returnMonthly = returnMonthlyRepository.findById(id)
+        ReturnMonthly returnMonthly = returnMonthlyRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
                 .orElseThrow(() -> new RuntimeException("Return record not found"));
         returnMonthly.setProduct(product != null ? product.trim().toLowerCase() : product);
         returnMonthly.setReturnDate(returnDate);
@@ -73,7 +77,9 @@ public class ReturnMonthlyService {
      * Delete a return record
      */
     public void deleteReturnRecord(Long id) {
-        returnMonthlyRepository.deleteById(id);
+        ReturnMonthly returnMonthly = returnMonthlyRepository.findByIdAndOwner(id, currentUserService.getCurrentUser())
+                .orElseThrow(() -> new RuntimeException("Return record not found"));
+        returnMonthlyRepository.delete(returnMonthly);
     }
 
     /**
@@ -105,4 +111,3 @@ public class ReturnMonthlyService {
         return stats;
     }
 }
-
