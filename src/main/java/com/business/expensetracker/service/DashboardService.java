@@ -61,9 +61,24 @@ public class DashboardService {
         return summary;
     }
 
+    @Cacheable("monthlyData")
     public Map<String, Object> getMonthlyData() {
         User user = currentUserService.getCurrentUser();
         int currentYear = LocalDate.now().getYear();
+        Map<Integer, BigDecimal> salesByMonth = new HashMap<>();
+        Map<Integer, BigDecimal> expensesByMonth = new HashMap<>();
+
+        for (Object[] row : saleRepository.getMonthlySalesTotals(currentYear)) {
+            Integer month = ((Number) row[0]).intValue();
+            BigDecimal total = (BigDecimal) row[1];
+            salesByMonth.put(month, total);
+        }
+        for (Object[] row : expenseRepository.getMonthlyExpenseTotals(currentYear)) {
+            Integer month = ((Number) row[0]).intValue();
+            BigDecimal total = (BigDecimal) row[1];
+            expensesByMonth.put(month, total);
+        }
+
         Map<Integer, BigDecimal> salesByMonth = new HashMap<>();
         Map<Integer, BigDecimal> expensesByMonth = new HashMap<>();
 
@@ -93,8 +108,9 @@ public class DashboardService {
         return result;
     }
 
+    @Cacheable("topProducts")
     public List<Map<String, Object>> getTopProducts() {
-        List<Object[]> results = saleRepository.findTopProductsByRevenue(currentUserService.getCurrentUser(), PageRequest.of(0, 10));
+        List<Object[]> results = saleRepository.findTopProductsByRevenue(PageRequest.of(0, 10));
         List<Map<String, Object>> topProducts = new ArrayList<>();
         for (Object[] row : results) {
             Map<String, Object> productData = new HashMap<>();
@@ -171,3 +187,4 @@ public class DashboardService {
         return profit.divide(sales, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100));
     }
 }
+
